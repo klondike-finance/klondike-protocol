@@ -2,6 +2,7 @@ import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/dist/src/signer-wit
 import { keccak256, ParamType } from 'ethers/lib/utils';
 import { network, ethers } from 'hardhat';
 
+<<<<<<< HEAD:scripts/queue-tx.ts
 import deployments from '../deployments/5.json';
 import { wait } from './utils';
 
@@ -12,6 +13,10 @@ function encodeParameters(
   const abi = new ethers.utils.AbiCoder();
   return abi.encode(types, values);
 }
+=======
+import deployments from '../../deployments/5.json';
+import { encodeParameters, wait } from './utils';
+>>>>>>> d394564... deploy 3 tokens:scripts/old/queue-tx.ts
 
 const MINUTE = 60;
 const HOUR = 60 * MINUTE;

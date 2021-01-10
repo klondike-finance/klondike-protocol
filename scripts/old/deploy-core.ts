@@ -6,9 +6,9 @@ import {
   ORACLE_START_DATE,
   TREASURY_START_DATE,
   UNI_FACTORY,
-} from '../deploy.config';
-import OLD from '../deployments/4.json';
-import { wait } from './utils';
+} from '../../deploy.config';
+import OLD from '../../deployments/4.json';
+import { encodeParameters, wait } from './utils';
 
 const MINUTE = 60;
 const HOUR = 60 * MINUTE;

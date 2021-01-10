@@ -5,16 +5,16 @@ import '../owner/Operator.sol';
 
 contract MockDai is ERC20Burnable, Operator {
     /**
-     * @notice Constructs the Basis Cash ERC-20 contract.
+     * @notice Constructs the KBTC ERC-20 contract.
      */
-    constructor() public ERC20('DAI', 'DAI') {
+    constructor() public ERC20('WBTC', 'WBTC') {
         _mint(msg.sender, 10000 * 10**18);
     }
 
     /**
-     * @notice Operator mints dino cash to a recipient
+     * @notice Operator mints dino kbtc to a recipient
      * @param recipient_ The address of recipient
-     * @param amount_ The amount of dino cash to mint to
+     * @param amount_ The amount of dino kbtc to mint to
      * @return whether the process has been done
      */
     function mint(address recipient_, uint256 amount_)

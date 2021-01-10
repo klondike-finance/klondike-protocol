@@ -7,6 +7,7 @@ import { Provider } from '@ethersproject/providers';
 import { advanceTimeAndBlock } from './shared/utilities';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/dist/src/signer-with-address';
 import { ParamType } from 'ethers/lib/utils';
+import { encodeParameters } from '../scripts/old/utils';
 
 chai.use(solidity);
 

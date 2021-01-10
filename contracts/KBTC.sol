@@ -3,28 +3,18 @@ pragma solidity ^0.6.0;
 import '@openzeppelin/contracts/token/ERC20/ERC20Burnable.sol';
 import './owner/Operator.sol';
 
-contract Cash is ERC20Burnable, Operator {
+contract KBTC is ERC20Burnable, Operator {
     /**
-     * @notice Constructs the Basis Cash ERC-20 contract.
+     * @notice Constructs the KBTC ERC-20 contract.
      */
-    constructor() public ERC20('BAC', 'BAC') {
-        // Mints 1 Basis Cash to contract creator for initial Uniswap oracle deployment.
-        // Will be burned after oracle deployment
-        _mint(msg.sender, 1 * 10**18);
+    constructor() public ERC20('KBTC', 'KBTC') {
+        _mint(msg.sender, 10**12); // 100 sat for uniswap pair
     }
 
-    //    function _beforeTokenTransfer(address from, address to, uint256 amount) internal virtual override {
-    //        super._beforeTokenTransfer(from, to, amount);
-    //        require(
-    //            to != operator(),
-    //            "basis.cash: operator as a recipient is not allowed"
-    //        );
-    //    }
-
     /**
-     * @notice Operator mints basis cash to a recipient
+     * @notice Operator mints KBTC to a recipient
      * @param recipient_ The address of recipient
-     * @param amount_ The amount of basis cash to mint to
+     * @param amount_ The amount of KBTC to mint to
      * @return whether the process has been done
      */
     function mint(address recipient_, uint256 amount_)

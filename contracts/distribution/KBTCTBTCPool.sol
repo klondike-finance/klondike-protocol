@@ -10,7 +10,7 @@ pragma solidity ^0.6.0;
 /___/ \_, //_//_/\__//_//_/\__/ \__//_/ /_\_\
      /___/
 
-* Synthetix: BASISCASHRewards.sol
+* Synthetix: KBTCRewards.sol
 *
 * Docs: https://docs.synthetix.io/
 *
@@ -62,11 +62,11 @@ import '@openzeppelin/contracts/token/ERC20/SafeERC20.sol';
 
 import '../interfaces/IRewardDistributionRecipient.sol';
 
-contract DAIWrapper {
+contract TBTCWrapper {
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
 
-    IERC20 public dai;
+    IERC20 public wbtc;
 
     uint256 private _totalSupply;
     mapping(address => uint256) private _balances;
@@ -82,18 +82,18 @@ contract DAIWrapper {
     function stake(uint256 amount) public virtual {
         _totalSupply = _totalSupply.add(amount);
         _balances[msg.sender] = _balances[msg.sender].add(amount);
-        dai.safeTransferFrom(msg.sender, address(this), amount);
+        wbtc.safeTransferFrom(msg.sender, address(this), amount);
     }
 
     function withdraw(uint256 amount) public virtual {
         _totalSupply = _totalSupply.sub(amount);
         _balances[msg.sender] = _balances[msg.sender].sub(amount);
-        dai.safeTransfer(msg.sender, amount);
+        wbtc.safeTransfer(msg.sender, amount);
     }
 }
 
-contract BACDAIPool is DAIWrapper, IRewardDistributionRecipient {
-    IERC20 public basisCash;
+contract KBTCTBTCPool is TBTCWrapper, IRewardDistributionRecipient {
+    IERC20 public KBTC;
     uint256 public DURATION = 5 days;
 
     uint256 public starttime;
@@ -111,17 +111,17 @@ contract BACDAIPool is DAIWrapper, IRewardDistributionRecipient {
     event RewardPaid(address indexed user, uint256 reward);
 
     constructor(
-        address basisCash_,
-        address dai_,
+        address KBTC_,
+        address wbtc_,
         uint256 starttime_
     ) public {
-        basisCash = IERC20(basisCash_);
-        dai = IERC20(dai_);
+        KBTC = IERC20(KBTC_);
+        wbtc = IERC20(wbtc_);
         starttime = starttime_;
     }
 
     modifier checkStart() {
-        require(block.timestamp >= starttime, 'BACDAIPool: not start');
+        require(block.timestamp >= starttime, 'KBTCTBTCPool: not start');
         _;
     }
 
@@ -168,12 +168,8 @@ contract BACDAIPool is DAIWrapper, IRewardDistributionRecipient {
         updateReward(msg.sender)
         checkStart
     {
-        require(amount > 0, 'BACDAIPool: Cannot stake 0');
+        require(amount > 0, 'KBTCTBTCPool: Cannot stake 0');
         uint256 newDeposit = deposits[msg.sender].add(amount);
-        require(
-            newDeposit <= 20000e18,
-            'BACDAIPool: deposit amount exceeds maximum 20000'
-        );
         deposits[msg.sender] = newDeposit;
         super.stake(amount);
         emit Staked(msg.sender, amount);
@@ -185,7 +181,7 @@ contract BACDAIPool is DAIWrapper, IRewardDistributionRecipient {
         updateReward(msg.sender)
         checkStart
     {
-        require(amount > 0, 'BACDAIPool: Cannot withdraw 0');
+        require(amount > 0, 'KBTCTBTCPool: Cannot withdraw 0');
         deposits[msg.sender] = deposits[msg.sender].sub(amount);
         super.withdraw(amount);
         emit Withdrawn(msg.sender, amount);
@@ -200,7 +196,7 @@ contract BACDAIPool is DAIWrapper, IRewardDistributionRecipient {
         uint256 reward = earned(msg.sender);
         if (reward > 0) {
             rewards[msg.sender] = 0;
-            basisCash.safeTransfer(msg.sender, reward);
+            KBTC.safeTransfer(msg.sender, reward);
             emit RewardPaid(msg.sender, reward);
         }
     }

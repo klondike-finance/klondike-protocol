@@ -58,7 +58,7 @@ async function migration(deployer, network, accounts) {
     cash.address, dai.address, unit, unit, unit, unit, accounts[0], deadline(),
   );
   await uniswapRouter.addLiquidity(
-    share.address, dai.address, unit, unit, unit, unit, accounts[0],  deadline(),
+    share.address, dai.address, unit, unit, unit, unit, accounts[0], deadline(),
   );
 
   console.log(`DAI-BAC pair address: ${await uniswap.getPair(dai.address, cash.address)}`);
@@ -67,24 +67,27 @@ async function migration(deployer, network, accounts) {
   // Deploy boardroom
   await deployer.deploy(Boardroom, cash.address, share.address);
 
+  let startTime = POOL_START_DATE;
+  if (network === 'mainnet') {
+    startTime += 5 * DAY;
+  }
+
   // 2. Deploy oracle for the pair between bac and dai
   await deployer.deploy(
     Oracle,
     uniswap.address,
     cash.address,
     dai.address,
+    3600, // period
+    startTime, // start time
   );
-
-  let startTime = POOL_START_DATE;
-  if (network === 'mainnet') {
-    startTime += 5 * DAY;
-  }
 
   await deployer.deploy(
     Treasury,
     cash.address,
     Bond.address,
     Share.address,
+    Oracle.address,
     Oracle.address,
     Boardroom.address,
     startTime,

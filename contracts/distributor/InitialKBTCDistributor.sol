@@ -1,31 +1,32 @@
 pragma solidity ^0.6.0;
 
-import '../distribution/BACDAIPool.sol';
-import '../distribution/BACSUSDPool.sol';
-import '../distribution/BACUSDCPool.sol';
-import '../distribution/BACUSDTPool.sol';
-import '../distribution/BACyCRVPool.sol';
+import '../distribution/KBTCWBTCPool.sol';
+// import '../distribution/KBTCWBTCPool.sol';
+// import '../distribution/KBTCSUSDPool.sol';
+// import '../distribution/KBTCUSDCPool.sol';
+// import '../distribution/KBTCUSDTPool.sol';
+// import '../distribution/KBTCyCRVPool.sol';
 import '../interfaces/IDistributor.sol';
 
-contract InitialCashDistributor is IDistributor {
+contract InitialKBTCDistributor is IDistributor {
     using SafeMath for uint256;
 
-    event Distributed(address pool, uint256 cashAmount);
+    event Distributed(address pool, uint256 kbtcAmount);
 
     bool public once = true;
 
-    IERC20 public cash;
+    IERC20 public kbtc;
     IRewardDistributionRecipient[] public pools;
     uint256 public totalInitialBalance;
 
     constructor(
-        IERC20 _cash,
+        IERC20 _kbtc,
         IRewardDistributionRecipient[] memory _pools,
         uint256 _totalInitialBalance
     ) public {
-        require(_pools.length != 0, 'a list of BAC pools are required');
+        require(_pools.length != 0, 'a list of KBTC pools are required');
 
-        cash = _cash;
+        kbtc = _kbtc;
         pools = _pools;
         totalInitialBalance = _totalInitialBalance;
     }
@@ -33,13 +34,13 @@ contract InitialCashDistributor is IDistributor {
     function distribute() public override {
         require(
             once,
-            'InitialCashDistributor: you cannot run this function twice'
+            'InitialKBTCDistributor: you cannot run this function twice'
         );
 
         for (uint256 i = 0; i < pools.length; i++) {
             uint256 amount = totalInitialBalance.div(pools.length);
 
-            cash.transfer(address(pools[i]), amount);
+            kbtc.transfer(address(pools[i]), amount);
             pools[i].notifyRewardAmount(amount);
 
             emit Distributed(address(pools[i]), amount);

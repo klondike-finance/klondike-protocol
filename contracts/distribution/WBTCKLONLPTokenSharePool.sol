@@ -10,7 +10,7 @@ pragma solidity ^0.6.0;
 /___/ \_, //_//_/\__//_//_/\__/ \__//_/ /_\_\
      /___/
 
-* Synthetix: BASISCASHRewards.sol
+* Synthetix: KBTCRewards.sol
 *
 * Docs: https://docs.synthetix.io/
 *
@@ -63,33 +63,36 @@ import '@openzeppelin/contracts/token/ERC20/SafeERC20.sol';
 import '../interfaces/IRewardDistributionRecipient.sol';
 
 import '../token/LPTokenWrapper.sol';
+import '../owner/Operator.sol';
 
-contract DAIBASLPTokenSharePool is
+contract WBTCKLONLPTokenKlonPool is
     LPTokenWrapper,
-    IRewardDistributionRecipient
+    IRewardDistributionRecipient,
+    Operator
 {
-    IERC20 public basisShare;
+    IERC20 public klon;
     uint256 public DURATION = 365 days;
 
     uint256 public starttime;
     uint256 public periodFinish = 0;
     uint256 public rewardRate = 0;
-    uint256 public lastUpdateTime;
-    uint256 public rewardPerTokenStored;
-    mapping(address => uint256) public userRewardPerTokenPaid;
-    mapping(address => uint256) public rewards;
+    uint256 public lastUpdateTime; // effective fund start date
+    uint256 public rewardPerTokenStored; // reward per token at last updateReward is called
+    mapping(address => uint256) public userRewardPerTokenPaid; // cumulative reward per token @ last updateReward
+    mapping(address => uint256) public rewards; // cumulative earnings since last withdrawal
 
     event RewardAdded(uint256 reward);
+    event RewardWithdrawn(address to, uint256 reward);
     event Staked(address indexed user, uint256 amount);
     event Withdrawn(address indexed user, uint256 amount);
     event RewardPaid(address indexed user, uint256 reward);
 
     constructor(
-        address basisShare_,
+        address klon_,
         address lptoken_,
         uint256 starttime_
     ) public {
-        basisShare = IERC20(basisShare_);
+        klon = IERC20(klon_);
         lpt = IERC20(lptoken_);
         starttime = starttime_;
     }
@@ -97,7 +100,7 @@ contract DAIBASLPTokenSharePool is
     modifier checkStart() {
         require(
             block.timestamp >= starttime,
-            'DAIBASLPTokenSharePool: not start'
+            'WBTCKLONLPTokenKlonPool: not start'
         );
         _;
     }
@@ -116,6 +119,7 @@ contract DAIBASLPTokenSharePool is
         return Math.min(block.timestamp, periodFinish);
     }
 
+    // total cumulative reward per token
     function rewardPerToken() public view returns (uint256) {
         if (totalSupply() == 0) {
             return rewardPerTokenStored;
@@ -130,6 +134,7 @@ contract DAIBASLPTokenSharePool is
             );
     }
 
+    // cumulative earnings since last withdrawal
     function earned(address account) public view returns (uint256) {
         return
             balanceOf(account)
@@ -145,18 +150,19 @@ contract DAIBASLPTokenSharePool is
         updateReward(msg.sender)
         checkStart
     {
-        require(amount > 0, 'DAIBASLPTokenSharePool: Cannot stake 0');
+        require(amount > 0, 'WBTCKLONLPTokenKlonPool: Cannot stake 0');
         super.stake(amount);
         emit Staked(msg.sender, amount);
     }
 
+    // unstake
     function withdraw(uint256 amount)
         public
         override
         updateReward(msg.sender)
         checkStart
     {
-        require(amount > 0, 'DAIBASLPTokenSharePool: Cannot withdraw 0');
+        require(amount > 0, 'WBTCKLONLPTokenKlonPool: Cannot withdraw 0');
         super.withdraw(amount);
         emit Withdrawn(msg.sender, amount);
     }
@@ -166,15 +172,39 @@ contract DAIBASLPTokenSharePool is
         getReward();
     }
 
+    // transfer reward to me
     function getReward() public updateReward(msg.sender) checkStart {
         uint256 reward = earned(msg.sender);
         if (reward > 0) {
             rewards[msg.sender] = 0;
-            basisShare.safeTransfer(msg.sender, reward);
+            klon.safeTransfer(msg.sender, reward);
             emit RewardPaid(msg.sender, reward);
         }
     }
 
+    function rewardsLeft() public view returns (uint256) {
+        uint256 remaining = periodFinish.sub(block.timestamp);
+        return remaining.mul(rewardRate);
+    }
+
+
+    /* ========== OPERATOR ========== */
+
+    // withdraw funds allocated for future distrubution
+    function withdrawRewards(address to, uint256 amount) public onlyOperator updateReward(address(0)) {
+        uint256 remainingTime = periodFinish.sub(block.timestamp);
+        uint256 leftover = remainingTime.mul(rewardRate);
+        require(amount <= leftover, "amount exceeds remaining rewards");
+        uint256 newReward = leftover - amount;
+        rewardRate = newReward.div(remainingTime);
+        lastUpdateTime = block.timestamp;
+        lpt.safeTransfer(to, amount);
+        emit RewardWithdrawn(to, amount);
+    }
+
+    /* ========== REWARD DISTRIBUTOR ========== */
+
+    // update reward rate for new reward
     function notifyRewardAmount(uint256 reward)
         external
         override

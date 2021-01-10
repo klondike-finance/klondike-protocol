@@ -7,13 +7,13 @@ import '@openzeppelin/contracts/token/ERC20/SafeERC20.sol';
 import './lib/Safe112.sol';
 import './owner/Operator.sol';
 import './utils/ContractGuard.sol';
-import './interfaces/IBasisAsset.sol';
+import './interfaces/IKlondikeAsset.sol';
 
-contract ShareWrapper {
+contract KlonWrapper {
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
 
-    IERC20 public share;
+    IERC20 public klon;
 
     uint256 private _totalSupply;
     mapping(address => uint256) private _balances;
@@ -29,22 +29,22 @@ contract ShareWrapper {
     function stake(uint256 amount) public virtual {
         _totalSupply = _totalSupply.add(amount);
         _balances[msg.sender] = _balances[msg.sender].add(amount);
-        share.safeTransferFrom(msg.sender, address(this), amount);
+        klon.safeTransferFrom(msg.sender, address(this), amount);
     }
 
     function withdraw(uint256 amount) public virtual {
-        uint256 directorShare = _balances[msg.sender];
+        uint256 balance = _balances[msg.sender];
         require(
-            directorShare >= amount,
+            balance >= amount,
             'Boardroom: withdraw request greater than staked amount'
         );
         _totalSupply = _totalSupply.sub(amount);
-        _balances[msg.sender] = directorShare.sub(amount);
-        share.safeTransfer(msg.sender, amount);
+        _balances[msg.sender] = balance.sub(amount);
+        klon.safeTransfer(msg.sender, amount);
     }
 }
 
-contract Boardroom is ShareWrapper, ContractGuard, Operator {
+contract Boardroom is KlonWrapper, ContractGuard, Operator {
     using SafeERC20 for IERC20;
     using Address for address;
     using SafeMath for uint256;
@@ -60,27 +60,28 @@ contract Boardroom is ShareWrapper, ContractGuard, Operator {
     struct BoardSnapshot {
         uint256 time;
         uint256 rewardReceived;
-        uint256 rewardPerShare;
+        uint256 rewardPerKlon;
     }
 
     /* ========== STATE VARIABLES ========== */
 
-    IERC20 private cash;
+    IERC20 private kbtc;
 
     mapping(address => Boardseat) private directors;
     BoardSnapshot[] private boardHistory;
 
     /* ========== CONSTRUCTOR ========== */
 
-    constructor(IERC20 _cash, IERC20 _share) public {
-        cash = _cash;
-        share = _share;
+    constructor(IERC20 _kbtc, IERC20 _klon) public {
+        kbtc = _kbtc;
+        klon = _klon;
 
-        BoardSnapshot memory genesisSnapshot = BoardSnapshot({
-            time: block.number,
-            rewardReceived: 0,
-            rewardPerShare: 0
-        });
+        BoardSnapshot memory genesisSnapshot =
+            BoardSnapshot({
+                time: block.number,
+                rewardReceived: 0,
+                rewardPerKlon: 0
+            });
         boardHistory.push(genesisSnapshot);
     }
 
@@ -133,13 +134,13 @@ contract Boardroom is ShareWrapper, ContractGuard, Operator {
 
     // =========== Director getters
 
-    function rewardPerShare() public view returns (uint256) {
-        return getLatestSnapshot().rewardPerShare;
+    function rewardPerKlon() public view returns (uint256) {
+        return getLatestSnapshot().rewardPerKlon;
     }
 
     function earned(address director) public view returns (uint256) {
-        uint256 latestRPS = getLatestSnapshot().rewardPerShare;
-        uint256 storedRPS = getLastSnapshotOf(director).rewardPerShare;
+        uint256 latestRPS = getLatestSnapshot().rewardPerKlon;
+        uint256 storedRPS = getLastSnapshotOf(director).rewardPerKlon;
 
         return
             balanceOf(director).mul(latestRPS.sub(storedRPS)).div(1e18).add(
@@ -181,11 +182,12 @@ contract Boardroom is ShareWrapper, ContractGuard, Operator {
         uint256 reward = directors[msg.sender].rewardEarned;
         if (reward > 0) {
             directors[msg.sender].rewardEarned = 0;
-            cash.safeTransfer(msg.sender, reward);
+            kbtc.safeTransfer(msg.sender, reward);
             emit RewardPaid(msg.sender, reward);
         }
     }
 
+    /// amount in `wei`
     function allocateSeigniorage(uint256 amount)
         external
         onlyOneBlock
@@ -198,17 +200,18 @@ contract Boardroom is ShareWrapper, ContractGuard, Operator {
         );
 
         // Create & add new snapshot
-        uint256 prevRPS = getLatestSnapshot().rewardPerShare;
+        uint256 prevRPS = getLatestSnapshot().rewardPerKlon;
         uint256 nextRPS = prevRPS.add(amount.mul(1e18).div(totalSupply()));
 
-        BoardSnapshot memory newSnapshot = BoardSnapshot({
-            time: block.number,
-            rewardReceived: amount,
-            rewardPerShare: nextRPS
-        });
+        BoardSnapshot memory newSnapshot =
+            BoardSnapshot({
+                time: block.number,
+                rewardReceived: amount,
+                rewardPerKlon: nextRPS
+            });
         boardHistory.push(newSnapshot);
 
-        cash.safeTransferFrom(msg.sender, address(this), amount);
+        kbtc.safeTransferFrom(msg.sender, address(this), amount);
         emit RewardAdded(msg.sender, amount);
     }
 
