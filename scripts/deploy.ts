@@ -313,7 +313,7 @@ function addDays(date: Date, days: number) {
   }
 
 async function mintIfZero(contract: any, to: string, amount: BigNumber) {
-    const balance = await contract.balance(to);
+    const balance = await contract.balanceOf(to);
     if (balance > 0) {
         console.log(`Skipping minting ${amount} for contract ${contract.address}`);
     };
