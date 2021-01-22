@@ -27,6 +27,8 @@ const KLON_FUNDS_START = T;
 const ORACLE_START_DATE = addDays(T, 4 * DATE_SCALE);
 const TREASURY_START_DATE = addDays(T, 6 * DATE_SCALE);
 const ORALCE_PERIOD_SECS = 3600;
+const SEIGNORAGE_PERIOD_SECS = PROD ? 86400 : 60;
+const TIMELOCK_DELAY = 3600 * 24 * 2;
 
 /* ========== WALLET PARAMS ========== */
 const OWNER = PROD ? "TBA" : "0xc699c2611e81a0995f26d4f293ef9dd5bef4da92";
@@ -82,16 +84,17 @@ async function main() {
         await withTimeout(context, deployContract(context, "Oracle", context.contracts["UniswapV2Factory"].address, context.contracts["KBTC"].address, context.contracts["WBTC"].address, ORALCE_PERIOD_SECS, ORACLE_START_DATE));
         await withTimeout(context, deployContract(context, "DevFund"));
         await withTimeout(context, deployContract(context, "StableFund", context.contracts["WBTC"].address, context.contracts["KBTC"].address, context.contracts["UniswapV2Factory"].address, context.contracts["UniswapV2Router02"].address), TRADER);
-        await withTimeout(context, deployContract(context, "Treasury", context.contracts["KBTC"].address, context.contracts["Kbond"].address, context.contracts["Klon"].address, context.contracts["Oracle"].address, context.contracts["Oracle"].address, context.contracts["Boardroom"].address, context.contracts["DevFund"].address, context.contracts["StableFund"].address, TREASURY_START_DATE));
+        await withTimeout(context, deployContract(context, "Treasury", context.contracts["KBTC"].address, context.contracts["Kbond"].address, context.contracts["Klon"].address, context.contracts["Oracle"].address, context.contracts["Oracle"].address, context.contracts["Boardroom"].address, context.contracts["DevFund"].address, context.contracts["StableFund"].address, TREASURY_START_DATE, SEIGNORAGE_PERIOD_SECS));
         await withTimeout(context, deployKBTCPools(context));
         await withTimeout(context, deployKLONPools(context));
         await withTimeout(context, distributeToKBTCPools(context, ["KBTCWBTCPool", "KBTCRenBTCPool", "KBTCTBTCPool"]));
         await withTimeout(context, distributeToKLONPools(context));
-        await withTimeout(context, deployDistributor(context));
+        // await withTimeout(context, deployDistributor(context));
         await withTimeout(context, setOperatorToTreasury(context, "KBTC"));
         await withTimeout(context, setOperatorToTreasury(context, "Kbond"));
         await withTimeout(context, setOperatorToTreasury(context, "Klon"));
         await withTimeout(context, setOperatorToTreasury(context, "Boardroom"));
+        await withTimeout(context, deployContract(context, "Timelock", OWNER, TIMELOCK_DELAY));
     } finally {
         writeFileSync(deployedContractsPath, JSON.stringify(deployedContracts, null, 2));
     }

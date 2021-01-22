@@ -64,8 +64,9 @@ contract Treasury is ContractGuard, Epoch {
         address _boardroom,
         address _devfund,
         address _stablefund,
-        uint256 _startTime
-    ) public Epoch(1 days, _startTime, 0) {
+        uint256 _startTime,
+        uint256 _period
+    ) public Epoch(_period, _startTime, 0) {
         kbtc = _kbtc;
         kbond = _kbond;
         klon = _klon;
