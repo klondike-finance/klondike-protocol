@@ -92,10 +92,10 @@ async function main() {
         await withTimeout(context, deployAndMintKlonDistributor(context));
         await withTimeout(context, distributeToKLONPools(context));
         // await withTimeout(context, deployDistributor(context));
-        await withTimeout(context, setOperatorToTreasury(context, "KBTC"));
-        await withTimeout(context, setOperatorToTreasury(context, "Kbond"));
-        await withTimeout(context, setOperatorToTreasury(context, "Klon"));
-        await withTimeout(context, setOperatorToTreasury(context, "Boardroom"));
+        await withTimeout(context, setOperatorToTreasury(context, "KBTC", false));
+        await withTimeout(context, setOperatorToTreasury(context, "Kbond", false));
+        await withTimeout(context, setOperatorToTreasury(context, "Klon", false));
+        await withTimeout(context, setOperatorToTreasury(context, "Boardroom", true));
         await withTimeout(context, deployContract(context, "Timelock", OWNER, TIMELOCK_DELAY));
     } finally {
         writeFileSync(deployedContractsPath, JSON.stringify(deployedContracts, null, 2));
@@ -120,18 +120,27 @@ async function compileContracts() {
     console.log("Compiled contracts");
 }
 
-async function setOperatorToTreasury(context: Context, name: string) {
-    await sleep(SLEEP_TIME);
-    console.log(`Setting operator for ${name} to treasury`);
+async function setOperatorToTreasury(context: Context, name: string, skipOwner: boolean) {
     const treasury = context.contracts["Treasury"];
     const contract = context.contracts[name];
+    await sleep(SLEEP_TIME);
+    console.log(`Setting operator for ${name} to treasury`);
     const operator = await contract.operator();
     if (operator === treasury.address) {
         console.log("Operator is already treasury, skipping");
-        return;
+    } else {
+        await contract.transferOperator(treasury.address);
     }
-    await contract.transferOperator(treasury.address);
-    console.log("Set operator for treasury");
+    if (skipOwner) { return }
+    await sleep(SLEEP_TIME);
+    console.log(`Setting owner for ${name} to treasury`);
+    const owner = await contract.owner();
+    if (owner === treasury.address) {
+        console.log("Owner is already treasury, skipping");
+    } else {
+        await contract.transferOwnership(treasury.address);
+    }
+    console.log("Set operator and owner for treasury");
 }
 
 async function deployKBTCPools(context: Context) {
