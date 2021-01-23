@@ -1,6 +1,4 @@
-/**
- *Submitted for verification at Etherscan.io on 2017-04-06
-*/
+pragma solidity ^0.4.8;
 
 contract MultiSigWallet {
 

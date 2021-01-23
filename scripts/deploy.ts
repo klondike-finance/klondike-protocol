@@ -91,9 +91,8 @@ async function main() {
         await withTimeout(context, distributeToKBTCPools(context, ["KBTCWBTCPool", "KBTCRenBTCPool", "KBTCTBTCPool"]));
         await withTimeout(context, deployAndMintKlonDistributor(context));
         await withTimeout(context, distributeToKLONPools(context));
-        await withTimeout(context, deployDistributor(context));
         await withTimeout(context, deployContract(context, "MultiSigWallet", MULTISIG_ADDRESSES, 2));
-        await withTimeout(context, deployContract(context, "Timelock", context.contracts["MultiSigWallet"], TIMELOCK_DELAY));        
+        await withTimeout(context, deployContract(context, "Timelock", context.contracts["MultiSigWallet"].address, TIMELOCK_DELAY));        
         await withTimeout(context, lockOperators(context));
     } finally {
         writeFileSync(deployedContractsPath, JSON.stringify(deployedContracts, null, 2));
@@ -261,7 +260,7 @@ async function distributeToKLONPools(context: Context) {
     await (SLEEP_TIME);
     console.log(`Setting Reward distribution for KLON LP (${distributor.address})`);
     await wbtcKLONLPTokenKlonPool.setRewardDistribution(distributor.address);
-    await (SLEEP_TIME);
+    await (SLEEP_TIME * 2);
     console.log(`Distributing tokens`);
     await distributor.distribute();
     console.log("Distributed to KLON pools");
