@@ -206,7 +206,7 @@ contract Treasury is ContractGuard, Epoch {
             'Treasury: cannot purchase kbonds with zero amount'
         );
 
-        uint256 kbondPrice = getKbondOraclePrice();
+        uint256 kbondPrice = getKbondOraclePrice(); // sat / eth
         require(kbondPrice == targetPrice, 'Treasury: kbtc price moved');
         require(
             kbondPrice < wbtcOneUnit,
@@ -216,7 +216,7 @@ contract Treasury is ContractGuard, Epoch {
         IKlondikeAsset(kbtc).burnFrom(msg.sender, amount);
         IKlondikeAsset(kbond).mint(
             msg.sender,
-            amount.mul(kbtcOneUnit).div(kbondPrice)
+            amount.mul(wbtcOneUnit).div(kbondPrice)
         );
         _updateKBTCPrice();
 
