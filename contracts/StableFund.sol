@@ -9,12 +9,12 @@ import './lib/UniswapV2Library.sol';
 import './owner/TraderOperator.sol';
 
 contract StableFund is TraderOperator {
-    IUniswapV2Pair pair;
-    IERC20 tokenA;
-    IERC20 tokenB;
-    IUniswapV2Router02 router;
-    address trader;
-    bool migrated = false;
+    IUniswapV2Pair public pair;
+    IERC20 public tokenA;
+    IERC20 public tokenB;
+    IUniswapV2Router02 public router;
+    address public trader;
+    bool public migrated = false;
 
     constructor(
         address _tokenA,
@@ -95,13 +95,13 @@ contract StableFund is TraderOperator {
         returns (bool)
     {
         if (token == address(tokenA)) {
-            return tokenA.approve(address(pair), amount);
+            return tokenA.approve(address(router), amount);
         } else {
             require(
                 token == address(tokenB),
                 'StableFund: token should match either tokenA or tokenB'
             );
-            return tokenB.approve(address(pair), amount);
+            return tokenB.approve(address(router), amount);
         }
     }
 
