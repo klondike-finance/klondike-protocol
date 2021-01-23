@@ -264,7 +264,7 @@ contract Treasury is ContractGuard, Epoch {
     {
         _updateKBTCPrice();
         uint256 kbtcPrice = getSeigniorageOraclePrice();
-        if (kbtcPrice > kbtcPriceCeiling) {
+        if (kbtcPrice <= kbtcPriceCeiling) {
             return;
         }
 

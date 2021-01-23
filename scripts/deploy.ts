@@ -1,4 +1,3 @@
-import externalContracts from './deploy/external_contracts';
 import hre, { ethers } from 'hardhat';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/dist/src/signer-with-address';
 import { readFileSync, writeFileSync } from 'fs';
@@ -16,18 +15,19 @@ const PROD = false;
 
 const SATOSHI_PER_BTC = 100_000_000;
 const SLEEP_TIME = PROD ? 3000 : 1000;
-const TIMEOUT = PROD ? 250_000 : 150_000;
+const TIMEOUT = PROD ? 400_000 : 200_000;
 
 /* ========== TIME PARAMS ========== */
 
-const T = PROD ? new Date("2021-01-25T09:00:00.000Z") : new Date("2021-01-23T09:00:00.000Z");
+const T = Math.floor((PROD ? new Date("2021-01-25T09:00:00.000Z") : new Date("2021-01-23T09:00:00.000Z")).getTime() / 1000);
+const DAY_SECS = 24 * 60 * 60;
 const DATE_SCALE = PROD ? 1 : 0.001;
 const KBTC_FUNDS_START = T;
 const KLON_FUNDS_START = T;
-const ORACLE_START_DATE = addDays(T, 4 * DATE_SCALE);
-const TREASURY_START_DATE = addDays(T, 6 * DATE_SCALE);
-const ORALCE_PERIOD_SECS = 3600;
-const SEIGNORAGE_PERIOD_SECS = PROD ? 86400 : 60;
+const ORACLE_START_DATE = T + Math.floor(4 * DAY_SECS * DATE_SCALE);
+const TREASURY_START_DATE = T + Math.floor(6 * DAY_SECS * DATE_SCALE);
+const ORALCE_PERIOD_SECS = PROD ? 3600 : 60;
+const SEIGNORAGE_PERIOD_SECS = PROD ? DAY_SECS : 60;
 const TIMELOCK_DELAY = 3600 * 24 * 2;
 
 /* ========== WALLET PARAMS ========== */
@@ -36,7 +36,7 @@ const TRADER = PROD ? "TBA" : "0xac602665f618652d53565519eaf24d0326c2ec1a";
 
 /* ========== FUND PARAMS ========== */
 
-const INITIAL_KBTC_FOR_POOLS = BigNumber.from(ethers.constants.WeiPerEther).mul(1);
+const INITIAL_KBTC_FOR_POOLS = BigNumber.from(ethers.constants.WeiPerEther).mul(3);
 const INITIAL_KLON_FOR_WBTC_KBTC = BigNumber.from(ethers.constants.WeiPerEther).mul(750_000);
 const INITIAL_KLON_FOR_WBTC_KLON = BigNumber.from(ethers.constants.WeiPerEther).mul(250_000);
 const DECAY_RATE = 75;
@@ -83,11 +83,13 @@ async function main() {
         await withTimeout(context, deployContract(context, "Boardroom", context.contracts["KBTC"].address, context.contracts["Klon"].address));
         await withTimeout(context, deployContract(context, "Oracle", context.contracts["UniswapV2Factory"].address, context.contracts["KBTC"].address, context.contracts["WBTC"].address, ORALCE_PERIOD_SECS, ORACLE_START_DATE));
         await withTimeout(context, deployContract(context, "DevFund"));
-        await withTimeout(context, deployContract(context, "StableFund", context.contracts["WBTC"].address, context.contracts["KBTC"].address, context.contracts["UniswapV2Factory"].address, context.contracts["UniswapV2Router02"].address), TRADER);
+        await withTimeout(context, deployContract(context, "StableFund", context.contracts["WBTC"].address, context.contracts["KBTC"].address, context.contracts["UniswapV2Factory"].address, context.contracts["UniswapV2Router02"].address, TRADER));
         await withTimeout(context, deployContract(context, "Treasury", context.contracts["KBTC"].address, context.contracts["Kbond"].address, context.contracts["Klon"].address, context.contracts["Oracle"].address, context.contracts["Oracle"].address, context.contracts["Boardroom"].address, context.contracts["DevFund"].address, context.contracts["StableFund"].address, TREASURY_START_DATE, SEIGNORAGE_PERIOD_SECS));
         await withTimeout(context, deployKBTCPools(context));
         await withTimeout(context, deployKLONPools(context));
+        await withTimeout(context, deployAndMintKBTCDistributor(context, ["KBTCWBTCPool", "KBTCRenBTCPool", "KBTCTBTCPool"]));
         await withTimeout(context, distributeToKBTCPools(context, ["KBTCWBTCPool", "KBTCRenBTCPool", "KBTCTBTCPool"]));
+        await withTimeout(context, deployAndMintKlonDistributor(context));
         await withTimeout(context, distributeToKLONPools(context));
         // await withTimeout(context, deployDistributor(context));
         await withTimeout(context, setOperatorToTreasury(context, "KBTC"));
@@ -153,9 +155,9 @@ async function deployKLONPools(context: Context) {
     console.log("Deployed KLON pools");
 }
 
-async function distributeToKBTCPools(context: Context, poolNames: string[]) {
+async function deployAndMintKBTCDistributor(context: Context, poolNames: string[]) {
     await sleep(SLEEP_TIME);
-    console.log("Distributing to KBTC pools");
+    console.log("Depoying KBTC distributor");
     const poolContracts = poolNames.map(poolName => context.contracts[poolName]);
     const KBTC = context.contracts["KBTC"];
     const result = await deployContract(context, "InitialKBTCDistributor", KBTC.address, poolContracts.map(c => c.address), INITIAL_KBTC_FOR_POOLS);
@@ -164,24 +166,29 @@ async function distributeToKBTCPools(context: Context, poolNames: string[]) {
         return;
     }
     const distributor = context.contracts["InitialKBTCDistributor"];
-    console.log(`Setting Reward Distribution (${distributor.address})`);
+    await mintIfZero(KBTC, distributor.address, INITIAL_KBTC_FOR_POOLS);
+    console.log("Depoyed KBTC distributor");
+}
+
+async function distributeToKBTCPools(context: Context, poolNames: string[]) {
+    console.log("Distributing to KBTC pools");
+    const distributor = context.contracts["InitialKBTCDistributor"];
+    const poolContracts = poolNames.map(poolName => context.contracts[poolName]);
+    console.log(`Setting Reward Distributor (${distributor.address}) in pools`);
     for (const poolContract of poolContracts) {
-        await sleep(SLEEP_TIME);
+        await sleep(SLEEP_TIME * 2);
         console.log(`For (${poolContract.address})`);
         await poolContract.setRewardDistribution(distributor.address);
     }
-    await sleep(SLEEP_TIME);
-    console.log(`Minting ${INITIAL_KBTC_FOR_POOLS.div(ethers.constants.WeiPerEther).toNumber()} to distributor at ${distributor.address} from token ${KBTC.address}`);
-    await mintIfZero(KBTC, distributor.address, INITIAL_KBTC_FOR_POOLS);
-    await sleep(SLEEP_TIME);
+    await sleep(SLEEP_TIME * 2);
     console.log(`Distributing tokens`);
     await distributor.distribute();
     console.log("Distributed to KBTC pools");
 }
 
-async function distributeToKLONPools(context: Context) {
+async function deployAndMintKlonDistributor(context: Context) {
     await sleep(SLEEP_TIME);
-    console.log("Distributing to KLON pools");
+    console.log("Deploying Klon ditributor");
     const kbtcWBTCBalance = INITIAL_KLON_FOR_WBTC_KBTC;
     const klonWBTCBalance = INITIAL_KLON_FOR_WBTC_KLON;
     const totalBalance = kbtcWBTCBalance.add(klonWBTCBalance);
@@ -193,10 +200,19 @@ async function distributeToKLONPools(context: Context) {
         console.log("KLON pools already deployed. Skipping...");
         return;
     }
-    const distributor = await context.contracts["InitialKlonDistributor"];
+    const distributor = context.contracts["InitialKlonDistributor"];
     console.log(`Minting to distributor`);
     await mintIfZero(Klon, distributor.address, totalBalance);
+    console.log("Deployed Klon ditributor");
+}
+
+
+async function distributeToKLONPools(context: Context) {
     await sleep(SLEEP_TIME);
+    console.log("Distributing to KLON pools");
+    const wbtcKBTCLPTokenKlonPool = context.contracts["WBTCKBTCLPTokenKlonPool"];
+    const wbtcKLONLPTokenKlonPool = context.contracts["WBTCKLONLPTokenKlonPool"];    
+    const distributor = context.contracts["InitialKlonDistributor"];
     console.log(`Setting Reward distribution for KBTC LP (${distributor.address})`);
     await wbtcKBTCLPTokenKlonPool.setRewardDistribution(distributor.address);
     await (SLEEP_TIME);
