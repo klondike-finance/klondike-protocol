@@ -301,6 +301,8 @@ contract Treasury is ContractGuard, Epoch {
             emit TreasuryFunded(now, treasuryReserve);
         }
 
+        seigniorage = seigniorage.sub(treasuryReserve);
+
         uint256 stablefundReserve =
             seigniorage.mul(stablefundAllocationRate).div(100);
         if (stablefundReserve > 0) {
@@ -310,7 +312,7 @@ contract Treasury is ContractGuard, Epoch {
         seigniorage = seigniorage.sub(stablefundReserve);
 
         // boardroom
-        uint256 boardroomReserve = seigniorage.sub(treasuryReserve);
+        uint256 boardroomReserve = seigniorage;
         if (boardroomReserve > 0) {
             IERC20(kbtc).safeApprove(boardroom, boardroomReserve);
             IBoardroom(boardroom).allocateSeigniorage(boardroomReserve);

@@ -7,7 +7,7 @@ async function main() {
     const data = readFileSync(deployedContractsPath).toString();
     const deployedContracts1 = JSON.parse(data).kovan;
     const deployedContracts: any = {};
-    deployedContracts["InitialKBTCDistributor"] = deployedContracts1["InitialKBTCDistributor"];
+    deployedContracts["Treasury"] = deployedContracts1["Treasury"];
     for (const name in deployedContracts) {
         const constructorArgsPath = `${__dirname}/../tmp/verifyArgs${name}.js`;
         const { address, args = [] } = deployedContracts[name];
