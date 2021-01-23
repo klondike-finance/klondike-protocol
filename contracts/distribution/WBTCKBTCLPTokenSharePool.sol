@@ -211,7 +211,7 @@ contract WBTCKBTCLPTokenKlonPool is
         rewardRate = initreward.div(DURATION);
         lastUpdateTime = block.timestamp;
         periodFinish = block.timestamp.add(DURATION);
-        lpt.safeTransfer(to, amount);
+        klon.safeTransfer(to, amount);
         emit RewardWithdrawn(to, amount);
     }
 
