@@ -19,7 +19,7 @@ const TIMEOUT = PROD ? 400_000 : 200_000;
 
 /* ========== TIME PARAMS ========== */
 
-const T = Math.floor((PROD ? new Date("2021-01-25T09:00:00.000Z") : new Date("2021-01-23T09:00:00.000Z")).getTime() / 1000);
+const T = Math.floor((PROD ? new Date("2021-01-25T09:00:00.000Z") : new Date("2021-01-23T12:00:00.000Z")).getTime() / 1000);
 const DAY_SECS = 24 * 60 * 60;
 const DATE_SCALE = PROD ? 1 : 0.001;
 const KBTC_FUNDS_START = T;
@@ -28,11 +28,11 @@ const ORACLE_START_DATE = T + Math.floor(4 * DAY_SECS * DATE_SCALE);
 const TREASURY_START_DATE = T + Math.floor(6 * DAY_SECS * DATE_SCALE);
 const ORALCE_PERIOD_SECS = PROD ? 3600 : 60;
 const SEIGNORAGE_PERIOD_SECS = PROD ? DAY_SECS : 60;
-const TIMELOCK_DELAY = 3600 * 24 * 2;
+const TIMELOCK_DELAY = PROD ? 3600 * 24 * 2 : 120;
 
 /* ========== WALLET PARAMS ========== */
-const OWNER = PROD ? "TBA" : "0xc699c2611e81a0995f26d4f293ef9dd5bef4da92";
 const TRADER = PROD ? "TBA" : "0xac602665f618652d53565519eaf24d0326c2ec1a";
+const MULTISIG_ADDRESSES = PROD ? ["TBA"] : ["0xc699c2611e81a0995f26d4f293ef9dd5bef4da92", "0xCEbc1DEcABb266e064FB9759fd413A885dA885dd", "0x2CEFFCA5C29c3E1d9a2586E49D80c7A057d8c5F9"];
 
 /* ========== FUND PARAMS ========== */
 
@@ -91,12 +91,10 @@ async function main() {
         await withTimeout(context, distributeToKBTCPools(context, ["KBTCWBTCPool", "KBTCRenBTCPool", "KBTCTBTCPool"]));
         await withTimeout(context, deployAndMintKlonDistributor(context));
         await withTimeout(context, distributeToKLONPools(context));
-        // await withTimeout(context, deployDistributor(context));
-        await withTimeout(context, setOperatorToTreasury(context, "KBTC", false));
-        await withTimeout(context, setOperatorToTreasury(context, "Kbond", false));
-        await withTimeout(context, setOperatorToTreasury(context, "Klon", false));
-        await withTimeout(context, setOperatorToTreasury(context, "Boardroom", true));
-        await withTimeout(context, deployContract(context, "Timelock", OWNER, TIMELOCK_DELAY));
+        await withTimeout(context, deployDistributor(context));
+        await withTimeout(context, deployContract(context, "MultiSigWallet", MULTISIG_ADDRESSES, 2));
+        await withTimeout(context, deployContract(context, "Timelock", context.contracts["MultiSigWallet"], TIMELOCK_DELAY));        
+        await withTimeout(context, lockOperators(context));
     } finally {
         writeFileSync(deployedContractsPath, JSON.stringify(deployedContracts, null, 2));
     }
@@ -118,6 +116,42 @@ async function compileContracts() {
     console.log("Compiling contracts");
     await hre.run('compile');
     console.log("Compiled contracts");
+}
+
+async function lockOperators(context: Context) {
+    console.log("Locking operators");
+    const timelock = context.contracts["Timelock"];
+    const treasury = context.contracts["Treasury"];
+    const boardroom = context.contracts["Boardroom"];
+    const multisig = context.contracts["MultiSigWallet"];
+    const stableFund = context.contracts["StableFund"];
+    const devFund = context.contracts["DevFund"];
+    await setOperatorToTreasury(context, "KBTC", false);
+    await setOperatorToTreasury(context, "Kbond", false);
+    await setOperatorToTreasury(context, "Klon", false);
+    await setOperatorToTreasury(context, "Boardroom", true);
+    await sleep(SLEEP_TIME);
+    console.log("Setting boardroom ownership");
+    await boardroom.transferOwnership(multisig.address);
+    await sleep(SLEEP_TIME);
+    console.log("Setting stable fund operator");
+    await stableFund.transferOperator(multisig.address);
+    await sleep(SLEEP_TIME);
+    console.log("Setting stable fund ownership");
+    await stableFund.transferOwnership(timelock.address);
+    await sleep(SLEEP_TIME);
+    console.log("Setting treasury operator");
+    await treasury.transferOperator(timelock.address);
+    await sleep(SLEEP_TIME);
+    console.log("Setting treasury ownership");
+    await treasury.transferOwnership(timelock.address);
+    console.log("Setting devFund operator");
+    await devFund.transferOperator(multisig.address);
+    await sleep(SLEEP_TIME);
+    console.log("Setting devFund ownership");
+    await devFund.transferOwnership(timelock.address);
+
+    console.log("Locked operators");
 }
 
 async function setOperatorToTreasury(context: Context, name: string, skipOwner: boolean) {

@@ -6,9 +6,9 @@ import './interfaces/IUniswapV2Pair.sol';
 import './interfaces/IUniswapV2Router02.sol';
 
 import './lib/UniswapV2Library.sol';
-import './owner/TraderOperator.sol';
+import './owner/Operator.sol';
 
-contract StableFund is TraderOperator {
+contract StableFund is Operator {
     IUniswapV2Pair public pair;
     IERC20 public tokenA;
     IERC20 public tokenB;
@@ -105,15 +105,15 @@ contract StableFund is TraderOperator {
         }
     }
 
-    /* ========== TRADER OPERATOR ========== */
+    /* ========== OPERATOR ========== */
 
-    function setTrader(address _trader) public onlyTraderOperator checkMigration {
+    function setTrader(address _trader) public onlyOperator checkMigration {
         trader = _trader;
     }
 
-    /* ========== OPERATOR ========== */
+    /* ========== OWNER ========== */
 
-    function migrate(address target) public onlyOperator checkMigration {
+    function migrate(address target) public onlyOwner checkMigration {
         IERC20(tokenA).transfer(
             target,
             IERC20(tokenA).balanceOf(address(this))
