@@ -269,8 +269,8 @@ contract Treasury is ContractGuard, Epoch {
         }
 
         uint256 kbtcSupply =
-            IERC20(kbtc).totalSupply().sub(accumulatedSeigniorage);
-        uint256 percentage = kbtcPrice.sub(kbtcOneUnit); // sat
+            IERC20(kbtc).totalSupply().sub(accumulatedSeigniorage); //wei
+        uint256 percentage = kbtcPrice.sub(wbtcOneUnit); // sat
         uint256 seigniorage = kbtcSupply.mul(percentage).div(wbtcOneUnit); // wei
         IKlondikeAsset(kbtc).mint(address(this), seigniorage);
 
