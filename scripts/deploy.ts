@@ -31,14 +31,16 @@ const SEIGNORAGE_PERIOD_SECS = PROD ? DAY_SECS : 60;
 const TIMELOCK_DELAY = PROD ? 3600 * 24 * 2 : 120;
 
 /* ========== WALLET PARAMS ========== */
-const TRADER = PROD ? "TBA" : "0xac602665f618652d53565519eaf24d0326c2ec1a";
-const MULTISIG_ADDRESSES = PROD ? ["TBA"] : ["0xc699c2611e81a0995f26d4f293ef9dd5bef4da92", "0xCEbc1DEcABb266e064FB9759fd413A885dA885dd", "0x2CEFFCA5C29c3E1d9a2586E49D80c7A057d8c5F9"];
+const TRADER = PROD ? "0x1be8DAA03cc29E39d6E6710a1570CDaf3f413Ef2" : "0xac602665f618652d53565519eaf24d0326c2ec1a";
+const INITIAL_RECEIVER = TRADER;
+const MULTISIG_ADDRESSES = PROD ? ["TBA", "0x7217084Dd74CD28c9cFd4C7e612cdc631c4A5030", "0x6c907824d4c5b34920602EbA103649c435AAD449"] : ["0xc699c2611e81a0995f26d4f293ef9dd5bef4da92", "0xCEbc1DEcABb266e064FB9759fd413A885dA885dd", "0x2CEFFCA5C29c3E1d9a2586E49D80c7A057d8c5F9"];
 
 /* ========== FUND PARAMS ========== */
 
 const INITIAL_KBTC_FOR_POOLS = BigNumber.from(ethers.constants.WeiPerEther).mul(3);
 const INITIAL_KLON_FOR_WBTC_KBTC = BigNumber.from(ethers.constants.WeiPerEther).mul(750_000);
 const INITIAL_KLON_FOR_WBTC_KLON = BigNumber.from(ethers.constants.WeiPerEther).mul(250_000);
+const INITIAL_KBTC_DISTRIBUTION = BigNumber.from(ethers.constants.WeiPerEther).mul(2);
 const DECAY_RATE = 75;
 
 /* ========== UNISWAP PARAMS ========== */
@@ -68,6 +70,7 @@ async function main() {
     await compileContracts();
     try {
         await withTimeout(context, deployContract(context, "KBTC"));
+        await withTimeout(context, mintInitial(context));
         await withTimeout(context, deployContract(context, "Kbond"));
         await withTimeout(context, deployContract(context, "Klon"));
         await withTimeout(context, deployToken(context, "WBTC"));
@@ -98,6 +101,12 @@ async function main() {
         writeFileSync(deployedContractsPath, JSON.stringify(deployedContracts, null, 2));
     }
 
+}
+
+async function mintInitial(context: Context) {
+    console.log(`Minting ${INITIAL_KBTC_DISTRIBUTION} KBTC to ${INITIAL_RECEIVER}`);
+    const kbtc = context.contracts["KBTC"];
+    await mintIfZero(kbtc, INITIAL_RECEIVER, INITIAL_KBTC_DISTRIBUTION);
 }
 
 function withTimeout<T>(context: Context, promise: Promise<T>, timeout: any = TIMEOUT): Promise<void> {
