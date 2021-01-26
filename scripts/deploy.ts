@@ -19,7 +19,7 @@ const TIMEOUT = PROD ? 400_000 : 200_000;
 
 /* ========== TIME PARAMS ========== */
 
-const T = Math.floor((PROD ? new Date("2021-01-25T09:00:00.000Z") : new Date("2021-01-23T12:00:00.000Z")).getTime() / 1000);
+const T = Math.floor((PROD ? new Date("2021-01-27T09:00:00.000Z") : new Date("2021-01-23T12:00:00.000Z")).getTime() / 1000);
 const DAY_SECS = 24 * 60 * 60;
 const DATE_SCALE = PROD ? 1 : 0.001;
 const KBTC_FUNDS_START = T;
@@ -27,13 +27,13 @@ const KLON_FUNDS_START = T;
 const ORACLE_START_DATE = T + Math.floor(4 * DAY_SECS * DATE_SCALE);
 const TREASURY_START_DATE = T + Math.floor(6 * DAY_SECS * DATE_SCALE);
 const ORALCE_PERIOD_SECS = PROD ? 3600 : 60;
-const SEIGNORAGE_PERIOD_SECS = PROD ? DAY_SECS : 60;
+const SEIGNIORAGE_PERIOD_SECS = PROD ? DAY_SECS : 60;
 const TIMELOCK_DELAY = PROD ? 3600 * 24 * 2 : 120;
 
 /* ========== WALLET PARAMS ========== */
 const TRADER = PROD ? "0x1be8DAA03cc29E39d6E6710a1570CDaf3f413Ef2" : "0xac602665f618652d53565519eaf24d0326c2ec1a";
 const INITIAL_RECEIVER = TRADER;
-const MULTISIG_ADDRESSES = PROD ? ["TBA", "0x7217084Dd74CD28c9cFd4C7e612cdc631c4A5030", "0x6c907824d4c5b34920602EbA103649c435AAD449"] : ["0xc699c2611e81a0995f26d4f293ef9dd5bef4da92", "0xCEbc1DEcABb266e064FB9759fd413A885dA885dd", "0x2CEFFCA5C29c3E1d9a2586E49D80c7A057d8c5F9"];
+const MULTISIG_ADDRESSES = PROD ? ["0xc9703331D70faEea6516FB793b9f49d3CcD1037C", "0x7217084Dd74CD28c9cFd4C7e612cdc631c4A5030", "0x6c907824d4c5b34920602EbA103649c435AAD449"] : ["0xc699c2611e81a0995f26d4f293ef9dd5bef4da92", "0xCEbc1DEcABb266e064FB9759fd413A885dA885dd", "0x2CEFFCA5C29c3E1d9a2586E49D80c7A057d8c5F9"];
 
 /* ========== FUND PARAMS ========== */
 
@@ -55,6 +55,32 @@ const UNISWAP_INITIAL_LIQUIDITY_AMOUNT_BTC = BigNumber.from(100);
 
 const WBTC_TOTAL_SUPPLY = BigNumber.from(SATOSHI_PER_BTC).mul(100_000_000_000_000);
 
+function printParams() {
+    console.log(`T: ${new Date(T * 1000)}`);
+    console.log(`KTBC FUNDS START: ${new Date(KBTC_FUNDS_START * 1000)}`);
+    console.log(`KLON FUNDS START: ${new Date(KLON_FUNDS_START * 1000)}`);
+    console.log(`ORACLE START: ${new Date(ORACLE_START_DATE * 1000)}`);
+    console.log(`TREASURY START: ${new Date(TREASURY_START_DATE * 1000)}`);
+    console.log(`ORACLE PERIOD (SECS): ${ORALCE_PERIOD_SECS}`);
+    console.log(`SEIGNIORAGE PERIOD (SECS): ${SEIGNIORAGE_PERIOD_SECS}`);
+    console.log(`TIMELOCK DELAY (SECS): ${TIMELOCK_DELAY}`);
+    
+    console.log("");
+    console.log("-------------------------------------------------------");
+    console.log("");
+    console.log(`INITIAL KBTC RECEIVER: ${INITIAL_RECEIVER}`);
+    console.log(`TRADER: ${INITIAL_RECEIVER}`);
+    console.log(`MULTISIG ADDRESSES: ${MULTISIG_ADDRESSES}`);
+       
+    console.log("");
+    console.log("-------------------------------------------------------");
+    console.log("");
+    console.log(`INITIAL_KBTC_DISTRIBUTION: ${INITIAL_KBTC_DISTRIBUTION.div(ethers.constants.WeiPerEther).toString()}`);
+    console.log(`INITIAL_KBTC_FOR_POOLS: ${INITIAL_KBTC_FOR_POOLS.div(ethers.constants.WeiPerEther).toString()}`);
+    console.log(`INITIAL_KLON_FOR_WBTC_KBTC: ${INITIAL_KLON_FOR_WBTC_KBTC.div(ethers.constants.WeiPerEther).toString()}`);
+    console.log(`INITIAL_KLON_FOR_WBTC_KLON: ${INITIAL_KLON_FOR_WBTC_KLON.div(ethers.constants.WeiPerEther).toString()}`);
+
+}
 
 async function main() {
     console.log("Starting deploy");
@@ -87,7 +113,7 @@ async function main() {
         await withTimeout(context, deployContract(context, "Oracle", context.contracts["UniswapV2Factory"].address, context.contracts["KBTC"].address, context.contracts["WBTC"].address, ORALCE_PERIOD_SECS, ORACLE_START_DATE));
         await withTimeout(context, deployContract(context, "DevFund"));
         await withTimeout(context, deployContract(context, "StableFund", context.contracts["WBTC"].address, context.contracts["KBTC"].address, context.contracts["UniswapV2Factory"].address, context.contracts["UniswapV2Router02"].address, TRADER));
-        await withTimeout(context, deployContract(context, "Treasury", context.contracts["KBTC"].address, context.contracts["Kbond"].address, context.contracts["Klon"].address, context.contracts["Oracle"].address, context.contracts["Oracle"].address, context.contracts["Boardroom"].address, context.contracts["DevFund"].address, context.contracts["StableFund"].address, TREASURY_START_DATE, SEIGNORAGE_PERIOD_SECS));
+        await withTimeout(context, deployContract(context, "Treasury", context.contracts["KBTC"].address, context.contracts["Kbond"].address, context.contracts["Klon"].address, context.contracts["Oracle"].address, context.contracts["Oracle"].address, context.contracts["Boardroom"].address, context.contracts["DevFund"].address, context.contracts["StableFund"].address, TREASURY_START_DATE, SEIGNIORAGE_PERIOD_SECS));
         await withTimeout(context, deployKBTCPools(context));
         await withTimeout(context, deployKLONPools(context));
         await withTimeout(context, deployAndMintKBTCDistributor(context, ["KBTCWBTCPool", "KBTCRenBTCPool", "KBTCTBTCPool"]));
@@ -366,6 +392,7 @@ async function deployContract(context: Context, name: string, ...args: Array<any
     return true;
 }
 main().then(() => console.log("Delpoyed successfully")).catch(console.log);
+// printParams();
 
 function sleep(ms: any) {
     return new Promise((resolve) => {
