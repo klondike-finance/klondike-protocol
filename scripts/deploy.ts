@@ -19,7 +19,7 @@ const TIMEOUT = PROD ? 400_000 : 200_000;
 
 /* ========== TIME PARAMS ========== */
 
-const T = Math.floor((PROD ? new Date("2021-01-27T09:00:00.000Z") : new Date("2021-01-23T12:00:00.000Z")).getTime() / 1000);
+const T = Math.floor((PROD ? new Date("2021-01-27T18:00:00.000Z") : new Date("2021-01-23T12:00:00.000Z")).getTime() / 1000);
 const DAY_SECS = 24 * 60 * 60;
 const DATE_SCALE = PROD ? 1 : 0.001;
 const KBTC_FUNDS_START = T;
@@ -100,7 +100,7 @@ async function main() {
         await withTimeout(context, deployContract(context, "Kbond"));
         await withTimeout(context, deployContract(context, "Klon"));
         await withTimeout(context, deployToken(context, "WBTC"));
-        await withTimeout(context, deployToken(context, "TBTC"));
+        await withTimeout(context, deployToken(context, "BDIGG"));
         await withTimeout(context, deployToken(context, "RenBTC"));
         await withTimeout(context, deployUniswap(context));
         await withTimeout(context, setUniswapAllowance(context, "KBTC", MAX_UNISWAP_ALLOWANCE_TOKEN));
@@ -116,8 +116,8 @@ async function main() {
         await withTimeout(context, deployContract(context, "Treasury", context.contracts["KBTC"].address, context.contracts["Kbond"].address, context.contracts["Klon"].address, context.contracts["Oracle"].address, context.contracts["Oracle"].address, context.contracts["Boardroom"].address, context.contracts["DevFund"].address, context.contracts["StableFund"].address, TREASURY_START_DATE, SEIGNIORAGE_PERIOD_SECS));
         await withTimeout(context, deployKBTCPools(context));
         await withTimeout(context, deployKLONPools(context));
-        await withTimeout(context, deployAndMintKBTCDistributor(context, ["KBTCWBTCPool", "KBTCRenBTCPool", "KBTCTBTCPool"]));
-        await withTimeout(context, distributeToKBTCPools(context, ["KBTCWBTCPool", "KBTCRenBTCPool", "KBTCTBTCPool"]));
+        await withTimeout(context, deployAndMintKBTCDistributor(context, ["KBTCWBTCPool", "KBTCRenBTCPool", "KBTCBDIGGPool"]));
+        await withTimeout(context, distributeToKBTCPools(context, ["KBTCWBTCPool", "KBTCRenBTCPool", "KBTCBDIGGPool"]));
         await withTimeout(context, deployAndMintKlonDistributor(context));
         await withTimeout(context, distributeToKLONPools(context));
         await withTimeout(context, deployContract(context, "MultiSigWallet", MULTISIG_ADDRESSES, 2));
@@ -213,7 +213,7 @@ async function setOperatorToTreasury(context: Context, name: string, skipOwner: 
 
 async function deployKBTCPools(context: Context) {
     console.log("Deploying KBTC pools");
-    for (const name of ["RenBTC", "TBTC", "WBTC"])
+    for (const name of ["RenBTC", "BDIGG", "WBTC"])
         await deployContract(context, `KBTC${name}Pool`, context.contracts["KBTC"].address, context.contracts[name].address, KBTC_FUNDS_START);
     console.log("Deployed KBTC pools");
 }
@@ -410,6 +410,7 @@ async function mintIfZero(contract: any, to: string, amount: BigNumber) {
     const balance = await contract.balanceOf(to);
     if (balance > 0) {
         console.log(`Skipping minting ${amount} for contract ${contract.address}`);
+        return;
     };
     await contract.mint(to, amount);
 }
