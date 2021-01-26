@@ -15,6 +15,10 @@ export default {
     kovan: {
       url: process.env['INFURA_KOVAN_ENDPOINT'],
       accounts: [process.env['OPERATOR_PK']],
+    },
+    mainnet: {
+      url: process.env['INFURA_ENDPOINT'],
+      accounts: [process.env['OPERATOR_PK']],
     }
   },
   solidity: {

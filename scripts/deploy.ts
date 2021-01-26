@@ -9,7 +9,7 @@ type Context = {
     contracts: { [key: string]: Contract }
 };
 
-const PROD = false;
+const PROD = true;
 
 /* ========== CONSTANTS ========== */
 
@@ -34,6 +34,7 @@ const TIMELOCK_DELAY = PROD ? 3600 * 24 * 2 : 120;
 const TRADER = PROD ? "0x1be8DAA03cc29E39d6E6710a1570CDaf3f413Ef2" : "0xac602665f618652d53565519eaf24d0326c2ec1a";
 const INITIAL_RECEIVER = TRADER;
 const MULTISIG_ADDRESSES = PROD ? ["0xc9703331D70faEea6516FB793b9f49d3CcD1037C", "0x7217084Dd74CD28c9cFd4C7e612cdc631c4A5030", "0x6c907824d4c5b34920602EbA103649c435AAD449"] : ["0xc699c2611e81a0995f26d4f293ef9dd5bef4da92", "0xCEbc1DEcABb266e064FB9759fd413A885dA885dd", "0x2CEFFCA5C29c3E1d9a2586E49D80c7A057d8c5F9"];
+const MULTISIG_CONFIRMS = 2;
 
 /* ========== FUND PARAMS ========== */
 
@@ -71,6 +72,7 @@ function printParams() {
     console.log(`INITIAL KBTC RECEIVER: ${INITIAL_RECEIVER}`);
     console.log(`TRADER: ${INITIAL_RECEIVER}`);
     console.log(`MULTISIG ADDRESSES: ${MULTISIG_ADDRESSES}`);
+    console.log(`MULTISIG CONFIRMS: ${MULTISIG_CONFIRMS}`);
        
     console.log("");
     console.log("-------------------------------------------------------");
@@ -120,7 +122,7 @@ async function main() {
         await withTimeout(context, distributeToKBTCPools(context, ["KBTCWBTCPool", "KBTCRenBTCPool", "KBTCBDIGGPool"]));
         await withTimeout(context, deployAndMintKlonDistributor(context));
         await withTimeout(context, distributeToKLONPools(context));
-        await withTimeout(context, deployContract(context, "MultiSigWallet", MULTISIG_ADDRESSES, 2));
+        await withTimeout(context, deployContract(context, "MultiSigWallet", MULTISIG_ADDRESSES, MULTISIG_CONFIRMS));
         await withTimeout(context, deployContract(context, "Timelock", context.contracts["MultiSigWallet"].address, TIMELOCK_DELAY));        
         await withTimeout(context, lockOperators(context));
     } finally {
@@ -391,8 +393,8 @@ async function deployContract(context: Context, name: string, ...args: Array<any
     console.log(`Deployed contract \`${name}\` at \`${deployedContract.address}\`. Tx hash: \`${deployedContract.deployTransaction.hash}\`.`);
     return true;
 }
-main().then(() => console.log("Delpoyed successfully")).catch(console.log);
-// printParams();
+// main().then(() => console.log("Delpoyed successfully")).catch(console.log);
+printParams();
 
 function sleep(ms: any) {
     return new Promise((resolve) => {
