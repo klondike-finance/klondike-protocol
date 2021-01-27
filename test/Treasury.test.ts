@@ -17,6 +17,7 @@ chai.use(solidity);
 
 const DAY = 86400;
 const ETH = utils.parseEther('1');
+const BTC = BigNumber.from(10).pow(8);
 const ZERO = BigNumber.from(0);
 const ZERO_ADDR = '0x0000000000000000000000000000000000000000';
 const INITIAL_BAC_AMOUNT = utils.parseEther('50000');
@@ -68,6 +69,7 @@ describe('Treasury', () => {
   let treasury: Contract;
   let boardroom: Contract;
   let fund: Contract;
+  let stableFund: Contract;
 
   let startTime: BigNumber;
 
@@ -78,6 +80,7 @@ describe('Treasury', () => {
     oracle = await MockOracle.connect(operator).deploy();
     boardroom = await MockBoardroom.connect(operator).deploy(cash.address);
     fund = await SimpleFund.connect(operator).deploy();
+    stableFund = await SimpleFund.connect(operator).deploy();
 
     startTime = BigNumber.from(await latestBlocktime(provider)).add(DAY);
     treasury = await Treasury.connect(operator).deploy(
@@ -88,7 +91,7 @@ describe('Treasury', () => {
       oracle.address,
       boardroom.address,
       fund.address,
-      fund.address,
+      stableFund.address,
       startTime,
       DAY
     );
@@ -233,36 +236,41 @@ describe('Treasury', () => {
         });
 
         it('should funded correctly', async () => {
-          const cashPrice = ETH.mul(210).div(100);
+          const cashPrice = BTC.mul(210).div(100);
           await oracle.setPrice(cashPrice);
 
           // calculate with circulating supply
           const treasuryHoldings = await treasury.getReserve();
           const cashSupply = (await cash.totalSupply()).sub(treasuryHoldings);
           const expectedSeigniorage = cashSupply
-            .mul(cashPrice.sub(ETH))
-            .div(ETH);
+            .mul(cashPrice.sub(BTC))
+            .div(BTC);
 
-          // get all expected reserve
-          const expectedFundReserve = expectedSeigniorage
-            .mul(await treasury.fundAllocationRate())
+            // get all expected reserve
+          const expectedDevFundReserve = expectedSeigniorage
+            .mul(await treasury.devfundAllocationRate())
             .div(100);
 
           const expectedTreasuryReserve = bigmin(
-            expectedSeigniorage.sub(expectedFundReserve),
+            expectedSeigniorage.sub(expectedDevFundReserve),
             (await bond.totalSupply()).sub(treasuryHoldings)
           );
+          
+          const leftover = expectedSeigniorage
+          .sub(expectedDevFundReserve)
+          .sub(expectedTreasuryReserve);
 
-          const expectedBoardroomReserve = expectedSeigniorage
-            .sub(expectedFundReserve)
-            .sub(expectedTreasuryReserve);
+          const expectedStableFundReserve = leftover.mul(await treasury.stablefundAllocationRate()).div(100);
+
+          const expectedBoardroomReserve = leftover
+            .sub(expectedStableFundReserve);
 
           const allocationResult = await treasury.allocateSeigniorage();
 
-          if (expectedFundReserve.gt(ZERO)) {
+          if (expectedDevFundReserve.gt(ZERO)) {
             await expect(new Promise((resolve) => resolve(allocationResult)))
-              .to.emit(treasury, 'ContributionPoolFunded')
-              .withArgs(await latestBlocktime(provider), expectedFundReserve);
+              .to.emit(treasury, 'DevFundFunded')
+              .withArgs(await latestBlocktime(provider), expectedDevFundReserve);
           }
 
           if (expectedTreasuryReserve.gt(ZERO)) {
@@ -271,6 +279,15 @@ describe('Treasury', () => {
               .withArgs(
                 await latestBlocktime(provider),
                 expectedTreasuryReserve
+              );
+          }
+
+          if (expectedStableFundReserve.gt(ZERO)) {
+            await expect(new Promise((resolve) => resolve(allocationResult)))
+              .to.emit(treasury, 'StableFundFunded')
+              .withArgs(
+                await latestBlocktime(provider),
+                expectedStableFundReserve
               );
           }
 
@@ -283,7 +300,8 @@ describe('Treasury', () => {
               );
           }
 
-          expect(await cash.balanceOf(fund.address)).to.eq(expectedFundReserve);
+          expect(await cash.balanceOf(fund.address)).to.eq(expectedDevFundReserve);
+          expect(await cash.balanceOf(stableFund.address)).to.eq(expectedStableFundReserve);
           expect(await treasury.getReserve()).to.eq(expectedTreasuryReserve);
           expect(await cash.balanceOf(boardroom.address)).to.eq(
             expectedBoardroomReserve
