@@ -43,18 +43,18 @@ describe('Treasury', () => {
   });
 
   // core
-  let Bond: ContractFactory;
-  let Cash: ContractFactory;
-  let Share: ContractFactory;
+  let Kbond: ContractFactory;
+  let KBTC: ContractFactory;
+  let Klon: ContractFactory;
   let Treasury: ContractFactory;
   let SimpleFund: ContractFactory;
   let MockOracle: ContractFactory;
   let MockBoardroom: ContractFactory;
 
   before('fetch contract factories', async () => {
-    Bond = await ethers.getContractFactory('Bond');
-    Cash = await ethers.getContractFactory('Cash');
-    Share = await ethers.getContractFactory('Share');
+    Kbond = await ethers.getContractFactory('Kbond');
+    KBTC = await ethers.getContractFactory('KBTC');
+    Klon = await ethers.getContractFactory('Klon');
     Treasury = await ethers.getContractFactory('Treasury');
     SimpleFund = await ethers.getContractFactory('SimpleERCFund');
     MockOracle = await ethers.getContractFactory('MockOracle');
@@ -72,9 +72,9 @@ describe('Treasury', () => {
   let startTime: BigNumber;
 
   beforeEach('deploy contracts', async () => {
-    cash = await Cash.connect(operator).deploy();
-    bond = await Bond.connect(operator).deploy();
-    share = await Share.connect(operator).deploy();
+    cash = await KBTC.connect(operator).deploy();
+    bond = await Kbond.connect(operator).deploy();
+    share = await Klon.connect(operator).deploy();
     oracle = await MockOracle.connect(operator).deploy();
     boardroom = await MockBoardroom.connect(operator).deploy(cash.address);
     fund = await SimpleFund.connect(operator).deploy();
@@ -366,10 +366,10 @@ describe('Treasury', () => {
         await treasury.connect(operator).migrate(operator.address);
         expect(await treasury.migrated()).to.be.true;
 
-        await expect(treasury.buyBonds(ETH, ETH)).to.revertedWith(
+        await expect(treasury.buyKbonds(ETH, ETH)).to.revertedWith(
           'Treasury: migrated'
         );
-        await expect(treasury.redeemBonds(ETH, ETH)).to.revertedWith(
+        await expect(treasury.redeemKbonds(ETH, ETH)).to.revertedWith(
           'Treasury: migrated'
         );
       });
@@ -377,10 +377,10 @@ describe('Treasury', () => {
 
     describe('before startTime', () => {
       it('should fail if not started yet', async () => {
-        await expect(treasury.buyBonds(ETH, ETH)).to.revertedWith(
+        await expect(treasury.buyKbonds(ETH, ETH)).to.revertedWith(
           'Epoch: not started yet'
         );
-        await expect(treasury.redeemBonds(ETH, ETH)).to.revertedWith(
+        await expect(treasury.redeemKbonds(ETH, ETH)).to.revertedWith(
           'Epoch: not started yet'
         );
       });
@@ -395,15 +395,15 @@ describe('Treasury', () => {
         );
       });
 
-      describe('#buyBonds', () => {
+      describe('#buyKbonds', () => {
         it('should work if cash price below $1', async () => {
           const cashPrice = ETH.mul(99).div(100); // $0.99
           await oracle.setPrice(cashPrice);
           await cash.connect(operator).transfer(ant.address, ETH);
           await cash.connect(ant).approve(treasury.address, ETH);
 
-          await expect(treasury.connect(ant).buyBonds(ETH, cashPrice))
-            .to.emit(treasury, 'BoughtBonds')
+          await expect(treasury.connect(ant).buyKbonds(ETH, cashPrice))
+            .to.emit(treasury, 'BoughtKbonds')
             .withArgs(ant.address, ETH);
 
           expect(await cash.balanceOf(ant.address)).to.eq(ZERO);
@@ -419,7 +419,7 @@ describe('Treasury', () => {
           await cash.connect(ant).approve(treasury.address, ETH);
 
           await expect(
-            treasury.connect(ant).buyBonds(ETH, cashPrice)
+            treasury.connect(ant).buyKbonds(ETH, cashPrice)
           ).to.revertedWith(
             'Treasury: cashPrice not eligible for bond purchase'
           );
@@ -432,7 +432,7 @@ describe('Treasury', () => {
           await cash.connect(ant).approve(treasury.address, ETH);
 
           await expect(
-            treasury.connect(ant).buyBonds(ETH, ETH)
+            treasury.connect(ant).buyKbonds(ETH, ETH)
           ).to.revertedWith('Treasury: cash price moved');
         });
 
@@ -441,11 +441,11 @@ describe('Treasury', () => {
           await oracle.setPrice(cashPrice);
 
           await expect(
-            treasury.connect(ant).buyBonds(ZERO, cashPrice)
+            treasury.connect(ant).buyKbonds(ZERO, cashPrice)
           ).to.revertedWith('Treasury: cannot purchase bonds with zero amount');
         });
       });
-      describe('#redeemBonds', () => {
+      describe('#redeemKbonds', () => {
         beforeEach('allocate seigniorage to treasury', async () => {
           const cashPrice = ETH.mul(106).div(100);
           await oracle.setPrice(cashPrice);
@@ -463,8 +463,8 @@ describe('Treasury', () => {
 
           await bond.connect(operator).transfer(ant.address, ETH);
           await bond.connect(ant).approve(treasury.address, ETH);
-          await expect(treasury.connect(ant).redeemBonds(ETH, cashPrice))
-            .to.emit(treasury, 'RedeemedBonds')
+          await expect(treasury.connect(ant).redeemKbonds(ETH, cashPrice))
+            .to.emit(treasury, 'RedeemedKbonds')
             .withArgs(ant.address, ETH);
 
           expect(await bond.balanceOf(ant.address)).to.eq(ZERO); // 1:1
@@ -480,7 +480,7 @@ describe('Treasury', () => {
           const treasuryBalance = await cash.balanceOf(treasury.address);
           await bond.connect(operator).transfer(ant.address, treasuryBalance);
           await bond.connect(ant).approve(treasury.address, treasuryBalance);
-          await treasury.connect(ant).redeemBonds(treasuryBalance, cashPrice);
+          await treasury.connect(ant).redeemKbonds(treasuryBalance, cashPrice);
 
           expect(await bond.balanceOf(ant.address)).to.eq(ZERO);
           expect(await cash.balanceOf(ant.address)).to.eq(treasuryBalance); // 1:1
@@ -493,7 +493,7 @@ describe('Treasury', () => {
           await bond.connect(operator).transfer(ant.address, ETH);
           await bond.connect(ant).approve(treasury.address, ETH);
           await expect(
-            treasury.connect(ant).redeemBonds(ETH, ETH)
+            treasury.connect(ant).redeemKbonds(ETH, ETH)
           ).to.revertedWith('Treasury: cash price moved');
         });
 
@@ -502,7 +502,7 @@ describe('Treasury', () => {
           await oracle.setPrice(cashPrice);
 
           await expect(
-            treasury.connect(ant).redeemBonds(ZERO, cashPrice)
+            treasury.connect(ant).redeemKbonds(ZERO, cashPrice)
           ).to.revertedWith('Treasury: cannot redeem bonds with zero amount');
         });
 
@@ -513,7 +513,7 @@ describe('Treasury', () => {
           await bond.connect(operator).transfer(ant.address, ETH);
           await bond.connect(ant).approve(treasury.address, ETH);
           await expect(
-            treasury.connect(ant).redeemBonds(ETH, cashPrice)
+            treasury.connect(ant).redeemKbonds(ETH, cashPrice)
           ).to.revertedWith(
             'Treasury: cashPrice not eligible for bond purchase'
           );
@@ -529,7 +529,7 @@ describe('Treasury', () => {
           await bond.connect(ant).approve(treasury.address, redeemAmount);
 
           await expect(
-            treasury.connect(ant).redeemBonds(redeemAmount, cashPrice)
+            treasury.connect(ant).redeemKbonds(redeemAmount, cashPrice)
           ).to.revertedWith('Treasury: treasury has no more budget');
         });
       });

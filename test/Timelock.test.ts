@@ -7,7 +7,6 @@ import { Provider } from '@ethersproject/providers';
 import { advanceTimeAndBlock } from './shared/utilities';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/dist/src/signer-with-address';
 import { ParamType } from 'ethers/lib/utils';
-import { encodeParameters } from '../scripts/old/utils';
 
 chai.use(solidity);
 
@@ -38,17 +37,17 @@ describe('Timelock', () => {
     [operator, abuser] = await ethers.getSigners();
   });
 
-  let Bond: ContractFactory;
-  let Cash: ContractFactory;
-  let Share: ContractFactory;
+  let Kbond: ContractFactory;
+  let KBTC: ContractFactory;
+  let Klon: ContractFactory;
   let Timelock: ContractFactory;
   let Treasury: ContractFactory;
   let Boardroom: ContractFactory;
 
   before('fetch contract factories', async () => {
-    Bond = await ethers.getContractFactory('Bond');
-    Cash = await ethers.getContractFactory('Cash');
-    Share = await ethers.getContractFactory('Share');
+    Kbond = await ethers.getContractFactory('Kbond');
+    KBTC = await ethers.getContractFactory('KBTC');
+    Klon = await ethers.getContractFactory('Klon');
     Timelock = await ethers.getContractFactory('Timelock');
     Treasury = await ethers.getContractFactory('Treasury');
     Boardroom = await ethers.getContractFactory('Boardroom');
@@ -64,9 +63,9 @@ describe('Timelock', () => {
   let startTime: number;
 
   beforeEach('deploy contracts', async () => {
-    bond = await Bond.connect(operator).deploy();
-    cash = await Cash.connect(operator).deploy();
-    share = await Share.connect(operator).deploy();
+    bond = await Kbond.connect(operator).deploy();
+    cash = await KBTC.connect(operator).deploy();
+    share = await Klon.connect(operator).deploy();
     timelock = await Timelock.connect(operator).deploy(
       operator.address,
       2 * DAY

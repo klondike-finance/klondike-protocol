@@ -23,34 +23,34 @@ describe('Boardroom', () => {
     [operator, whale, abuser] = await ethers.getSigners();
   });
 
-  let Cash: ContractFactory;
+  let KBTC: ContractFactory;
   let Share: ContractFactory;
   let Boardroom: ContractFactory;
 
   before('fetch contract factories', async () => {
-    Cash = await ethers.getContractFactory('Cash');
-    Share = await ethers.getContractFactory('Share');
+    KBTC = await ethers.getContractFactory('KBTC');
+    Share = await ethers.getContractFactory('Klon');
     Boardroom = await ethers.getContractFactory('Boardroom');
   });
 
-  let cash: Contract;
-  let share: Contract;
+  let kbtc: Contract;
+  let klon: Contract;
   let boardroom: Contract;
 
   beforeEach('deploy contracts', async () => {
-    cash = await Cash.connect(operator).deploy();
-    share = await Share.connect(operator).deploy();
+    kbtc = await KBTC.connect(operator).deploy();
+    klon = await Share.connect(operator).deploy();
     boardroom = await Boardroom.connect(operator).deploy(
-      cash.address,
-      share.address
+      kbtc.address,
+      klon.address
     );
   });
 
   describe('#stake', () => {
     it('should work correctly', async () => {
       await Promise.all([
-        share.connect(operator).mint(whale.address, STAKE_AMOUNT),
-        share.connect(whale).approve(boardroom.address, STAKE_AMOUNT),
+        klon.connect(operator).mint(whale.address, STAKE_AMOUNT),
+        klon.connect(whale).approve(boardroom.address, STAKE_AMOUNT),
       ]);
 
       await expect(boardroom.connect(whale).stake(STAKE_AMOUNT))
@@ -76,8 +76,8 @@ describe('Boardroom', () => {
   describe('#withdraw', () => {
     beforeEach('stake', async () => {
       await Promise.all([
-        share.connect(operator).mint(whale.address, STAKE_AMOUNT),
-        share.connect(whale).approve(boardroom.address, STAKE_AMOUNT),
+        klon.connect(operator).mint(whale.address, STAKE_AMOUNT),
+        klon.connect(whale).approve(boardroom.address, STAKE_AMOUNT),
       ]);
       await boardroom.connect(whale).stake(STAKE_AMOUNT);
     });
@@ -87,7 +87,7 @@ describe('Boardroom', () => {
         .to.emit(boardroom, 'Withdrawn')
         .withArgs(whale.address, STAKE_AMOUNT);
 
-      expect(await share.balanceOf(whale.address)).to.eq(STAKE_AMOUNT);
+      expect(await klon.balanceOf(whale.address)).to.eq(STAKE_AMOUNT);
       expect(await boardroom.balanceOf(whale.address)).to.eq(ZERO);
     });
 
@@ -115,8 +115,8 @@ describe('Boardroom', () => {
   describe('#exit', async () => {
     beforeEach('stake', async () => {
       await Promise.all([
-        share.connect(operator).mint(whale.address, STAKE_AMOUNT),
-        share.connect(whale).approve(boardroom.address, STAKE_AMOUNT),
+        klon.connect(operator).mint(whale.address, STAKE_AMOUNT),
+        klon.connect(whale).approve(boardroom.address, STAKE_AMOUNT),
       ]);
       await boardroom.connect(whale).stake(STAKE_AMOUNT);
     });
@@ -126,7 +126,7 @@ describe('Boardroom', () => {
         .to.emit(boardroom, 'Withdrawn')
         .withArgs(whale.address, STAKE_AMOUNT);
 
-      expect(await share.balanceOf(whale.address)).to.eq(STAKE_AMOUNT);
+      expect(await klon.balanceOf(whale.address)).to.eq(STAKE_AMOUNT);
       expect(await boardroom.balanceOf(whale.address)).to.eq(ZERO);
     });
   });
@@ -134,15 +134,15 @@ describe('Boardroom', () => {
   describe('#allocateSeigniorage', () => {
     beforeEach('stake', async () => {
       await Promise.all([
-        share.connect(operator).mint(whale.address, STAKE_AMOUNT),
-        share.connect(whale).approve(boardroom.address, STAKE_AMOUNT),
+        klon.connect(operator).mint(whale.address, STAKE_AMOUNT),
+        klon.connect(whale).approve(boardroom.address, STAKE_AMOUNT),
       ]);
       await boardroom.connect(whale).stake(STAKE_AMOUNT);
     });
 
     it('should allocate seigniorage to stakers', async () => {
-      await cash.connect(operator).mint(operator.address, SEIGNIORAGE_AMOUNT);
-      await cash
+      await kbtc.connect(operator).mint(operator.address, SEIGNIORAGE_AMOUNT);
+      await kbtc
         .connect(operator)
         .approve(boardroom.address, SEIGNIORAGE_AMOUNT);
 
@@ -173,18 +173,18 @@ describe('Boardroom', () => {
   describe('#claimDividends', () => {
     beforeEach('stake', async () => {
       await Promise.all([
-        share.connect(operator).mint(whale.address, STAKE_AMOUNT),
-        share.connect(whale).approve(boardroom.address, STAKE_AMOUNT),
+        klon.connect(operator).mint(whale.address, STAKE_AMOUNT),
+        klon.connect(whale).approve(boardroom.address, STAKE_AMOUNT),
 
-        share.connect(operator).mint(abuser.address, STAKE_AMOUNT),                    
-        share.connect(abuser).approve(boardroom.address, STAKE_AMOUNT), 
+        klon.connect(operator).mint(abuser.address, STAKE_AMOUNT),                    
+        klon.connect(abuser).approve(boardroom.address, STAKE_AMOUNT), 
       ]);
       await boardroom.connect(whale).stake(STAKE_AMOUNT);
     });
 
     it('should claim devidends', async () => {
-      await cash.connect(operator).mint(operator.address, SEIGNIORAGE_AMOUNT);
-      await cash
+      await kbtc.connect(operator).mint(operator.address, SEIGNIORAGE_AMOUNT);
+      await kbtc
         .connect(operator)
         .approve(boardroom.address, SEIGNIORAGE_AMOUNT);
       await boardroom.connect(operator).allocateSeigniorage(SEIGNIORAGE_AMOUNT);
@@ -196,8 +196,8 @@ describe('Boardroom', () => {
     });
 
    it('should claim devidends correctly even after other person stakes after snapshot', async () => {
-      await cash.connect(operator).mint(operator.address, SEIGNIORAGE_AMOUNT);
-      await cash
+      await kbtc.connect(operator).mint(operator.address, SEIGNIORAGE_AMOUNT);
+      await kbtc
         .connect(operator)
         .approve(boardroom.address, SEIGNIORAGE_AMOUNT);
       await boardroom.connect(operator).allocateSeigniorage(SEIGNIORAGE_AMOUNT);

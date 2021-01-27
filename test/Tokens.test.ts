@@ -19,21 +19,21 @@ describe('Tokens', () => {
     [operator] = await ethers.getSigners();
   });
 
-  let Bond: ContractFactory;
-  let Cash: ContractFactory;
-  let Share: ContractFactory;
+  let Kbond: ContractFactory;
+  let KBTC: ContractFactory;
+  let Klon: ContractFactory;
 
   before('fetch contract factories', async () => {
-    Bond = await ethers.getContractFactory('Bond');
-    Cash = await ethers.getContractFactory('Cash');
-    Share = await ethers.getContractFactory('Share');
+    Kbond = await ethers.getContractFactory('Kbond');
+    KBTC = await ethers.getContractFactory('KBTC');
+    Klon = await ethers.getContractFactory('Klon');
   });
 
-  describe('Bond', () => {
+  describe('Kbond', () => {
     let token: Contract;
 
     before('deploy token', async () => {
-      token = await Bond.connect(operator).deploy();
+      token = await Kbond.connect(operator).deploy();
     });
 
     it('mint', async () => {
@@ -60,11 +60,11 @@ describe('Tokens', () => {
     });
   });
 
-  describe('Cash', () => {
+  describe('KBTC', () => {
     let token: Contract;
 
     before('deploy token', async () => {
-      token = await Cash.connect(operator).deploy();
+      token = await KBTC.connect(operator).deploy();
     });
 
     it('mint', async () => {
@@ -90,11 +90,11 @@ describe('Tokens', () => {
     });
   });
 
-  describe('Share', () => {
+  describe('Klon', () => {
     let token: Contract;
 
     before('deploy token', async () => {
-      token = await Share.connect(operator).deploy();
+      token = await Klon.connect(operator).deploy();
     });
 
     it('mint', async () => {
