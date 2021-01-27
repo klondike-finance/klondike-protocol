@@ -5,9 +5,10 @@ import hre from 'hardhat';
 async function main() {
     const deployedContractsPath = `${__dirname}/deployed.json`;
     const data = readFileSync(deployedContractsPath).toString();
-    const deployedContracts1 = JSON.parse(data).kovan;
+    const deployedContracts1 = JSON.parse(data).mainnet;
     const deployedContracts: any = {};
-    deployedContracts["Kbond"] = deployedContracts1["Kbond"];
+    const t = "Timelock";
+    deployedContracts[t] = deployedContracts1[t];
     for (const name in deployedContracts) {
         const constructorArgsPath = `${__dirname}/../tmp/verifyArgs${name}.js`;
         const { address, args = [] } = deployedContracts[name];

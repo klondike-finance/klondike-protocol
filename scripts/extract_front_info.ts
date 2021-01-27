@@ -1,7 +1,7 @@
 const { readFile, readFileSync, writeFileSync } = require("fs");
 import hre from "hardhat";
 
-const NETWORK = "kovan";
+const NETWORK = "mainnet";
 
 async function main() {
     const dataRaw = readFileSync(`${__dirname}/deployed.json`).toString();

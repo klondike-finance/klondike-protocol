@@ -15,7 +15,7 @@ const PROD = true;
 
 const SATOSHI_PER_BTC = 100_000_000;
 const SLEEP_TIME = PROD ? 3000 : 1000;
-const TIMEOUT = PROD ? 400_000 : 200_000;
+const TIMEOUT = PROD ? 200_000 : 200_000;
 
 /* ========== TIME PARAMS ========== */
 
@@ -162,6 +162,12 @@ async function lockOperators(context: Context) {
     const multisig = context.contracts["MultiSigWallet"];
     const stableFund = context.contracts["StableFund"];
     const devFund = context.contracts["DevFund"];
+    const kbtcKlonPool = context.contracts["WBTCKBTCLPTokenKlonPool"];
+    const klonKlonPool = context.contracts["WBTCKLONLPTokenKlonPool"];
+    const bdiggPool = context.contracts["KBTCBDIGGPool"];
+    const renbtcPool = context.contracts["KBTCRenBTCPool"];
+    const wbtcPool = context.contracts["KBTCWBTCPool"];
+
     await setOperatorToTreasury(context, "KBTC", false);
     await setOperatorToTreasury(context, "Kbond", false);
     await setOperatorToTreasury(context, "Klon", false);
@@ -186,6 +192,28 @@ async function lockOperators(context: Context) {
     await sleep(SLEEP_TIME);
     console.log("Setting devFund ownership");
     await devFund.transferOwnership(timelock.address);
+    await sleep(SLEEP_TIME);
+    console.log("Setting WBTCKBTCLPTokenKlonPool operator");
+    await kbtcKlonPool.transferOperator(multisig.address);
+    await sleep(SLEEP_TIME);
+    console.log("Setting WBTCKBTCLPTokenKlonPool owner");
+    await kbtcKlonPool.transferOwnership(multisig.address);
+    await sleep(SLEEP_TIME);
+    console.log("Setting WBTCKlonLPTokenKlonPool operator");
+    await klonKlonPool.transferOperator(multisig.address);
+    await sleep(SLEEP_TIME);
+    console.log("Setting WBTCKlonLPTokenKlonPool owner");
+    await klonKlonPool.transferOwnership(multisig.address);
+    await sleep(SLEEP_TIME);
+    console.log("Setting KBTCBDIGGPool owner");
+    await bdiggPool.transferOwnership(multisig.address);
+    await sleep(SLEEP_TIME);
+    console.log("Setting KBTCWBTCPool owner");
+    await wbtcPool.transferOwnership(multisig.address);
+    await sleep(SLEEP_TIME);
+    console.log("Setting KBTCRenBTCPool owner");
+    await renbtcPool.transferOwnership(multisig.address);
+    await sleep(SLEEP_TIME);
 
     console.log("Locked operators");
 }
@@ -393,8 +421,8 @@ async function deployContract(context: Context, name: string, ...args: Array<any
     console.log(`Deployed contract \`${name}\` at \`${deployedContract.address}\`. Tx hash: \`${deployedContract.deployTransaction.hash}\`.`);
     return true;
 }
-// main().then(() => console.log("Delpoyed successfully")).catch(console.log);
-printParams();
+main().then(() => console.log("Delpoyed successfully")).catch(console.log);
+// printParams();
 
 function sleep(ms: any) {
     return new Promise((resolve) => {
