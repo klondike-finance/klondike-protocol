@@ -84,7 +84,9 @@ describe('Timelock', () => {
       ZERO_ADDR,
       boardroom.address,
       ZERO_ADDR,
-      (await latestBlocktime(provider)) + 5 * DAY
+      ZERO_ADDR,
+      (await latestBlocktime(provider)) + 5 * DAY,
+      DAY
     );
 
     for await (const token of [cash, bond, share]) {
@@ -144,7 +146,9 @@ describe('Timelock', () => {
         ZERO_ADDR,
         boardroom.address,
         ZERO_ADDR,
-        startTime
+        ZERO_ADDR,
+        startTime,
+        DAY
       );
     });
 

@@ -88,7 +88,9 @@ describe('Treasury', () => {
       oracle.address,
       boardroom.address,
       fund.address,
-      startTime
+      fund.address,
+      startTime,
+      DAY
     );
     await fund.connect(operator).transferOperator(treasury.address);
   });
@@ -105,7 +107,9 @@ describe('Treasury', () => {
         oracle.address,
         boardroom.address,
         fund.address,
-        await latestBlocktime(provider)
+        fund.address,
+        await latestBlocktime(provider),
+        DAY
       );
 
       for await (const token of [cash, bond, share]) {
