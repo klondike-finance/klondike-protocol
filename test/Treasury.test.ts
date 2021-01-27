@@ -419,7 +419,7 @@ describe('Treasury', () => {
 
       describe('#buyKbonds', () => {
         it('should work if cash price below $1', async () => {
-          const cashPrice = ETH.mul(99).div(100); // $0.99
+          const cashPrice = BTC.mul(99).div(100); // $0.99
           await oracle.setPrice(cashPrice);
           await cash.connect(operator).transfer(ant.address, ETH);
           await cash.connect(ant).approve(treasury.address, ETH);
@@ -430,12 +430,12 @@ describe('Treasury', () => {
 
           expect(await cash.balanceOf(ant.address)).to.eq(ZERO);
           expect(await bond.balanceOf(ant.address)).to.eq(
-            ETH.mul(ETH).div(cashPrice)
+            ETH.mul(BTC).div(cashPrice)
           );
         });
 
         it('should fail if cash price over $1', async () => {
-          const cashPrice = ETH.mul(101).div(100); // $1.01
+          const cashPrice = BTC.mul(101).div(100); // $1.01
           await oracle.setPrice(cashPrice);
           await cash.connect(operator).transfer(ant.address, ETH);
           await cash.connect(ant).approve(treasury.address, ETH);
@@ -443,33 +443,33 @@ describe('Treasury', () => {
           await expect(
             treasury.connect(ant).buyKbonds(ETH, cashPrice)
           ).to.revertedWith(
-            'Treasury: cashPrice not eligible for bond purchase'
+            'Treasury: kbtcPrice not eligible for kbond purchase'
           );
         });
 
         it('should fail if price changed', async () => {
-          const cashPrice = ETH.mul(99).div(100); // $0.99
+          const cashPrice = BTC.mul(99).div(100); // $0.99
           await oracle.setPrice(cashPrice);
           await cash.connect(operator).transfer(ant.address, ETH);
           await cash.connect(ant).approve(treasury.address, ETH);
 
           await expect(
             treasury.connect(ant).buyKbonds(ETH, ETH)
-          ).to.revertedWith('Treasury: cash price moved');
+          ).to.revertedWith('Treasury: kbtc price moved');
         });
 
         it('should fail if purchase bonds with zero amount', async () => {
-          const cashPrice = ETH.mul(99).div(100); // $0.99
+          const cashPrice = BTC.mul(99).div(100); // $0.99
           await oracle.setPrice(cashPrice);
 
           await expect(
             treasury.connect(ant).buyKbonds(ZERO, cashPrice)
-          ).to.revertedWith('Treasury: cannot purchase bonds with zero amount');
+          ).to.revertedWith('Treasury: cannot purchase kbonds with zero amount');
         });
       });
       describe('#redeemKbonds', () => {
         beforeEach('allocate seigniorage to treasury', async () => {
-          const cashPrice = ETH.mul(106).div(100);
+          const cashPrice = BTC.mul(106).div(100);
           await oracle.setPrice(cashPrice);
           await treasury.allocateSeigniorage();
           await advanceTimeAndBlock(
@@ -480,7 +480,7 @@ describe('Treasury', () => {
         });
 
         it('should work if cash price exceeds $1.05', async () => {
-          const cashPrice = ETH.mul(106).div(100);
+          const cashPrice = BTC.mul(106).div(100);
           await oracle.setPrice(cashPrice);
 
           await bond.connect(operator).transfer(ant.address, ETH);
@@ -494,7 +494,7 @@ describe('Treasury', () => {
         });
 
         it("should drain over seigniorage and even contract's budget", async () => {
-          const cashPrice = ETH.mul(106).div(100);
+          const cashPrice = BTC.mul(106).div(100);
           await oracle.setPrice(cashPrice);
 
           await cash.connect(operator).transfer(treasury.address, ETH); // $1002
@@ -509,27 +509,27 @@ describe('Treasury', () => {
         });
 
         it('should fail if price changed', async () => {
-          const cashPrice = ETH.mul(106).div(100);
+          const cashPrice = BTC.mul(106).div(100);
           await oracle.setPrice(cashPrice);
 
           await bond.connect(operator).transfer(ant.address, ETH);
           await bond.connect(ant).approve(treasury.address, ETH);
           await expect(
             treasury.connect(ant).redeemKbonds(ETH, ETH)
-          ).to.revertedWith('Treasury: cash price moved');
+          ).to.revertedWith('Treasury: kbtc price moved');
         });
 
         it('should fail if redeem bonds with zero amount', async () => {
-          const cashPrice = ETH.mul(106).div(100);
+          const cashPrice = BTC.mul(106).div(100);
           await oracle.setPrice(cashPrice);
 
           await expect(
             treasury.connect(ant).redeemKbonds(ZERO, cashPrice)
-          ).to.revertedWith('Treasury: cannot redeem bonds with zero amount');
+          ).to.revertedWith('Treasury: cannot redeem kbonds with zero amount');
         });
 
         it('should fail if cash price is below $1+ε', async () => {
-          const cashPrice = ETH.mul(104).div(100);
+          const cashPrice = BTC.mul(104).div(100);
           await oracle.setPrice(cashPrice);
 
           await bond.connect(operator).transfer(ant.address, ETH);
@@ -537,12 +537,12 @@ describe('Treasury', () => {
           await expect(
             treasury.connect(ant).redeemKbonds(ETH, cashPrice)
           ).to.revertedWith(
-            'Treasury: cashPrice not eligible for bond purchase'
+            'Treasury: kbtcPrice not eligible for kbond purchase'
           );
         });
 
         it("should fail if redeem bonds over contract's budget", async () => {
-          const cashPrice = ETH.mul(106).div(100);
+          const cashPrice = BTC.mul(106).div(100);
           await oracle.setPrice(cashPrice);
 
           const treasuryBalance = await cash.balanceOf(treasury.address);
