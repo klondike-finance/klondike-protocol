@@ -44,7 +44,7 @@ contract StableFund is Operator {
     }
 
     modifier onlyTrader() {
-        require(msg.sender == trader, "sender is not trader");
+        require(msg.sender == trader, 'sender is not trader');
         _;
     }
 
@@ -60,14 +60,13 @@ contract StableFund is Operator {
         uint256 amountIn,
         uint256 amountOutMin,
         address[] calldata path,
-        address to,
         uint256 deadline
     ) public onlyAllowedTokens(path) onlyTrader checkMigration {
         router.swapExactTokensForTokens(
             amountIn,
             amountOutMin,
             path,
-            to,
+            address(this),
             deadline
         );
     }
@@ -76,14 +75,13 @@ contract StableFund is Operator {
         uint256 amountOut,
         uint256 amountInMax,
         address[] calldata path,
-        address to,
         uint256 deadline
     ) public onlyAllowedTokens(path) onlyTrader checkMigration {
         router.swapTokensForExactTokens(
             amountOut,
             amountInMax,
             path,
-            to,
+            address(this),
             deadline
         );
     }
